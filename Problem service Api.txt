@@ -1,0 +1,187 @@
+{
+  "info": {
+    "name": "Problem Service APIs",
+    "_postman_id": "c1a9e3b2-5c6a-4a1d-9a8d-111111111111",
+    "description": "Postman collection for Problem Service (Microservice Architecture)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api"
+    },
+    {
+      "key": "adminToken",
+      "value": "ADMIN_JWT_TOKEN"
+    },
+    {
+      "key": "judgeToken",
+      "value": "JUDGE_JWT_TOKEN"
+    }
+  ],
+  "item": [
+    {
+      "name": "Problems",
+      "item": [
+        {
+          "name": "Get Problem By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/problems/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["problems", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get All Problems (Pagination)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/problems?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["problems"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Problems By Difficulty",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/problems/difficulty/EASY",
+              "host": ["{{baseUrl}}"],
+              "path": ["problems", "difficulty", "EASY"]
+            }
+          }
+        },
+        {
+          "name": "Get Problems By Tag",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/problems/tag/array",
+              "host": ["{{baseUrl}}"],
+              "path": ["problems", "tag", "array"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - Test Cases",
+      "item": [
+        {
+          "name": "Add Test Case (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"input\": \"nums=[2,7,11,15], target=9\",\n  \"expectedOutput\": \"[0,1]\",\n  \"sample\": true,\n  \"score\": 1,\n  \"timeLimitMs\": 1000,\n  \"memoryLimitKb\": 256000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/problems/1/testcases",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "problems", "1", "testcases"]
+            }
+          }
+        },
+        {
+          "name": "Update Test Case (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"input\": \"nums=[3,2,4], target=6\",\n  \"expectedOutput\": \"[1,2]\",\n  \"sample\": true,\n  \"score\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/testcases/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "testcases", "1"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Test Case (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/testcases/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "testcases", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public - Test Cases",
+      "item": [
+        {
+          "name": "Get Sample Test Cases",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/problems/1/testcases/samples",
+              "host": ["{{baseUrl}}"],
+              "path": ["problems", "1", "testcases", "samples"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Internal - Judge",
+      "item": [
+        {
+          "name": "Get All Test Cases For Judge",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{judgeToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/problems/1/testcases",
+              "host": ["{{baseUrl}}"],
+              "path": ["internal", "problems", "1", "testcases"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+
+PROJECT PLAN: LEETCODE + KODEKLOUD CLONE (SPRING BOOT MICROSERVICES)
+
+TOTAL DURATION: 4–5 MONTHS (MVP)
+
+---------------------------------
+PART 1: LEETCODE-LIKE PLATFORM
+---------------------------------
+Duration: 8–10 Weeks
+
+Phases:
+1. System Design & Architecture – 1 Week
+2. Authentication Service (JWT, Roles) – 5 Days
+3. Problem Management Service – 1 Week
+4. Submission Service – 1 Week
+5. Code Execution Engine (Docker-based Judge) – 2–3 Weeks
+6. Result Evaluation & Verdict – 1 Week
+7. User Stats & History – 1 Week
+8. Basic UI / Admin Dashboard – 1–2 Weeks
+
+Tech Stack:
+- Java 17
+- Spring Boot 3
+- Spring Security + JWT
+- Spring Cloud Gateway
+- MySQL, Redis
+- Kafka
+- Docker
+- Swagger
+- AWS/GCP
+
+---------------------------------
+PART 2: KODEKLOUD-LIKE PLATFORM
+---------------------------------
+Duration: 6–7 Weeks
+
+Phases:
+1. System Design – 4–5 Days
+2. Auth & RBAC – 4 Days
+3. Course Management – 1 Week
+4. Video Lessons (URL-based) – 3 Days
+5. Progress Tracking – 1 Week
+6. Assessments (MCQs) – 1 Week
+7. Certificates (PDF) – 4–5 Days
+8. Basic UI – 1–2 Weeks
+
+---------------------------------
+INTERVIEW VALUE
+---------------------------------
+• Demonstrates system design
+• Secure code execution
+• Async processing using Kafka
+• Scalable microservices architecture
+• Production-ready Spring Boot design
+
+---------------------------------
+RECOMMENDED APPROACH
+---------------------------------
+• Build LeetCode clone first
+• Limit scope to MVP
+• Focus on architecture & scalability
+• Document everything (README, diagrams)
+
+This project alone can significantly boost chances for 15–20 LPA roles.
