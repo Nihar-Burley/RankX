@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
+import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ProblemWorkspace({ problem }) {
   const navigate = useNavigate();
@@ -9,24 +11,32 @@ export default function ProblemWorkspace({ problem }) {
 
   const [activeTab, setActiveTab] = useState("question");
 
-  // 🔹 Language + Editor
+  // Editor
   const [languageKey, setLanguageKey] = useState("");
   const [editorLanguage, setEditorLanguage] = useState("python");
   const [code, setCode] = useState("");
-
-  // 🔹 Starter code cache
   const [starterCodeMap, setStarterCodeMap] = useState({});
 
+  // UI state
   const [output, setOutput] = useState("");
   const [isDark, setIsDark] = useState(true);
   const [showConsole, setShowConsole] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Sidebar
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [problems, setProblems] = useState([]);
+  const [search, setSearch] = useState("");
+
+  /* ---------- fetch problem list ---------- */
+  useEffect(() => {
+    axios.get("/api/problems")
+      .then(res => setProblems(res.data.content || []));
+  }, []);
+
   /* ---------- navigation ---------- */
   const goPrev = () => {
-    if (problem.id > 1) {
-      navigate(`/problems/${problem.id - 1}`);
-    }
+    if (problem.id > 1) navigate(`/problems/${problem.id - 1}`);
   };
 
   const goNext = () => {
@@ -52,10 +62,9 @@ export default function ProblemWorkspace({ problem }) {
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
-  /* ---------- INIT LANGUAGES + TEMPLATES ---------- */
+  /* ---------- init language + starter code ---------- */
   useEffect(() => {
     if (problem?.languages?.length > 0) {
-      // build starter code map
       const map = {};
       problem.templates.forEach(t => {
         map[t.languageKey] = t.starterCode;
@@ -81,6 +90,7 @@ export default function ProblemWorkspace({ problem }) {
       {!isFullscreen && (
         <div className="flex justify-between items-center px-6 py-3 border-b border-gray-700">
           <div className="flex items-center gap-2">
+            <button onClick={() => setSidebarOpen(true)} className="nav-icon">☰</button>
             <button onClick={goPrev} className="nav-icon">⟵</button>
             <button onClick={goNext} className="nav-icon">⟶</button>
             <span className="ml-4 font-semibold">{problem.title}</span>
@@ -102,8 +112,6 @@ export default function ProblemWorkspace({ problem }) {
 
         {/* ================= LEFT PANEL ================= */}
         <div className="w-1/2 border-r border-gray-700 flex flex-col">
-
-          {/* Tabs */}
           <div className="flex gap-6 px-4 py-3 border-b border-gray-700">
             {["question", "solution", "submissions", "notes"].map(tab => (
               <button
@@ -120,23 +128,18 @@ export default function ProblemWorkspace({ problem }) {
             ))}
           </div>
 
-          {/* Content */}
-          <div className="p-5 overflow-y-auto leading-relaxed">
+          <div className="p-5 overflow-y-auto">
             {activeTab === "question" && (
               <>
                 <h2 className="text-2xl font-bold">{problem.title}</h2>
-
                 <span className="inline-block mt-2 px-2 py-1 bg-green-600 rounded text-sm">
                   {problem.difficulty}
                 </span>
-
                 <p className="mt-4">{problem.statement}</p>
-
                 <h3 className="mt-6 font-semibold">Constraints</h3>
                 <p className="text-gray-400">{problem.constraints}</p>
               </>
             )}
-
             {activeTab !== "question" && (
               <p className="text-gray-400">Coming soon...</p>
             )}
@@ -146,19 +149,15 @@ export default function ProblemWorkspace({ problem }) {
         {/* ================= RIGHT PANEL ================= */}
         <div className="w-1/2 flex flex-col">
 
-          {/* Toolbar */}
           <div className="flex justify-between items-center px-4 py-2 border-b border-gray-700">
             <select
               value={languageKey}
               onChange={(e) => {
-                const selectedKey = e.target.value;
-                setLanguageKey(selectedKey);
-
-                const lang = problem.languages.find(
-                  l => l.languageKey === selectedKey
-                );
+                const key = e.target.value;
+                setLanguageKey(key);
+                const lang = problem.languages.find(l => l.languageKey === key);
                 setEditorLanguage(lang.editorMode);
-                setCode(starterCodeMap[selectedKey] || "");
+                setCode(starterCodeMap[key] || "");
               }}
               className="bg-[#2d2d2d] px-2 py-1 rounded"
             >
@@ -170,57 +169,31 @@ export default function ProblemWorkspace({ problem }) {
             </select>
 
             <div className="flex gap-3">
-              {/* 🔁 RESET TO STARTER CODE */}
               <button
                 onClick={() => setCode(starterCodeMap[languageKey] || "")}
                 className="icon-btn"
-                title="Reset to Starter Code"
               >
                 ↺
               </button>
-
-              <button onClick={toggleFullscreen} className="icon-btn" title="Fullscreen">
-                ⛶
-              </button>
+              <button onClick={toggleFullscreen} className="icon-btn">⛶</button>
             </div>
           </div>
 
-          {/* Editor + Console */}
           <div className="flex flex-col flex-1 overflow-hidden">
-
-            {/* EDITOR */}
-            <div
-              className={`transition-all duration-200 ${
-                showConsole ? "h-[calc(100%-160px)]" : "h-full"
-              }`}
-            >
-              <Editor
-                height="100%"
-                theme={isDark ? "vs-dark" : "light"}
-                language={editorLanguage}
-                value={code}
-                onChange={setCode}
-                onMount={(editor) => (editorRef.current = editor)}
-              />
-            </div>
-
-            {/* CONSOLE */}
-            {showConsole && (
-              <div className="h-40 bg-black border-t border-gray-700 p-3 text-sm overflow-auto">
-                <strong>Console Output</strong>
-                <pre className="mt-2 whitespace-pre-wrap">
-                  {output || "No output yet"}
-                </pre>
-              </div>
-            )}
+            <Editor
+              height="100%"
+              theme={isDark ? "vs-dark" : "light"}
+              language={editorLanguage}
+              value={code}
+              onChange={setCode}
+              onMount={(editor) => (editorRef.current = editor)}
+            />
           </div>
 
-          {/* Action Bar */}
           <div className="flex justify-between items-center px-4 py-2 border-t border-gray-700">
             <button
               onClick={() => setShowConsole(!showConsole)}
               className="icon-btn"
-              title="Toggle Console"
             >
               🖥️
             </button>
@@ -228,7 +201,7 @@ export default function ProblemWorkspace({ problem }) {
             <div className="flex gap-3">
               <button
                 onClick={() => {
-                  setOutput("Sample test case output...");
+                  setOutput("Sample output...");
                   setShowConsole(true);
                 }}
                 className="px-4 py-1 bg-gray-600 rounded"
@@ -242,6 +215,63 @@ export default function ProblemWorkspace({ problem }) {
           </div>
         </div>
       </div>
+
+      {/* ================= SIDEBAR ================= */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+              className="fixed inset-0 bg-black z-40"
+            />
+
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ duration: 0.3 }}
+              className="fixed top-0 left-0 z-50 h-full w-80 bg-[#1e1e1e] border-r border-gray-700"
+            >
+              <div className="flex justify-between items-center px-4 py-3 border-b border-gray-700">
+                <h2 className="font-semibold">Problems</h2>
+                <button onClick={() => setSidebarOpen(false)} className="icon-btn">✕</button>
+              </div>
+
+              <div className="p-4">
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search problems..."
+                  className="w-full px-3 py-2 rounded bg-[#2d2d2d] text-gray-200"
+                />
+              </div>
+
+              <div className="overflow-y-auto">
+                {problems
+                  .filter(p => p.title.toLowerCase().includes(search.toLowerCase()))
+                  .map((p, idx) => (
+                    <div
+                      key={p.id}
+                      onClick={() => {
+                        navigate(`/problems/${p.id}`);
+                        setSidebarOpen(false);
+                      }}
+                      className={`px-4 py-3 cursor-pointer border-b border-gray-700
+                        hover:bg-[#2d2d2d]
+                        ${p.id === problem.id ? "text-green-400 bg-[#2d2d2d]" : ""}`}
+                    >
+                      <span className="mr-2 text-gray-400">{idx + 1}.</span>
+                      {p.title}
+                    </div>
+                  ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* ================= STYLES ================= */}
       <style>{`
@@ -265,3 +295,4 @@ export default function ProblemWorkspace({ problem }) {
     </div>
   );
 }
+  
