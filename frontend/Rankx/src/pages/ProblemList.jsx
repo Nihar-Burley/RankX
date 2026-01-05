@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 import { useNavigate } from "react-router-dom";
 
 export default function ProblemList() {
@@ -8,12 +8,18 @@ export default function ProblemList() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get("/api/problems")
-      .then(res => {
-        setProblems(res.data.content || []);
-      })
-      .catch(err => console.error(err));
-  }, []);
+  api.get("/problems")
+    .then(res => {
+      setProblems(res.data.content || []);
+    })
+    .catch(err => {
+      console.error(err);
+      if (err.response?.status === 401) {
+        navigate("/login"); // token expired / missing
+      }
+    });
+}, [navigate]);
+
 
   const difficultyColor = (level) => {
     switch (level) {

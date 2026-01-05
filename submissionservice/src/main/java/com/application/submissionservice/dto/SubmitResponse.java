@@ -2,15 +2,13 @@ package com.application.submissionservice.dto;
 
 import lombok.*;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class SubmitResponse {
+import java.util.List;
 
-    private Long submissionId;
-    private String verdict;     // ACCEPTED, WRONG_ANSWER, etc.
-    private Long runtimeMs;  // optional (can be null for now)
-    private Integer memoryKb;   // optional (can be null for now)
-}
+@Builder
+public record SubmitResponse(
+        Long submissionId,
+        String verdict,
+        List<TestCaseResultDTO> results,
+        Long runtimeMs,
+        Integer memoryKb
+) {}

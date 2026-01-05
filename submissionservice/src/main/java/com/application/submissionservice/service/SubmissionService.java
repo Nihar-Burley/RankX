@@ -5,28 +5,35 @@ import com.application.submissionservice.dto.*;
 import com.application.submissionservice.entity.*;
 import com.application.submissionservice.judge.Judge0Client;
 import com.application.submissionservice.repository.SubmissionRepository;
+import com.application.submissionservice.utility.LanguageRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 @Slf4j
 @Service
 public class SubmissionService {
 
-    private static final int JAVA_17_LANGUAGE_ID = 62;
     private static final int STATUS_ACCEPTED = 3;
 
     private final SubmissionRepository repository;
     private final ProblemServiceClient problemClient;
     private final Judge0Client judge0Client;
+    private final LanguageRegistry languageRegistry;
 
-    public SubmissionService(SubmissionRepository repository,
-                             ProblemServiceClient problemClient,
-                             Judge0Client judge0Client) {
+    public SubmissionService(
+            SubmissionRepository repository,
+            ProblemServiceClient problemClient,
+            Judge0Client judge0Client,
+            LanguageRegistry languageRegistry
+    ) {
         this.repository = repository;
         this.problemClient = problemClient;
         this.judge0Client = judge0Client;
+        this.languageRegistry = languageRegistry;
     }
 
     // ================= RUN =================
@@ -34,30 +41,27 @@ public class SubmissionService {
 
         validateSourceCode(request.getSourceCode());
 
+        int languageId =
+                languageRegistry.getLanguageId(request.getLanguageKey());
+
         RunResponse response = new RunResponse();
 
         List<SampleTestCaseDTO> testCases =
                 problemClient.getSampleTestCases(request.getProblemId());
 
-        log.info("test cases from problem service ---- "+testCases);
+        log.info("RUN | Testcases fetched = {}", testCases.size());
 
         for (SampleTestCaseDTO tc : testCases) {
 
             Map<String, Object> raw =
-                    judge0Client.submit(request.getSourceCode(), tc.input(), JAVA_17_LANGUAGE_ID);
-
-
-            log.info("judge0 response  ---- "+raw);
-
+                    judge0Client.submit(request.getSourceCode(), tc.input(), languageId);
 
             Judge0Result result = parseJudge0Result(raw);
-
             String actual = extractOutput(result);
 
             boolean passed =
                     result.status() != null &&
                             ((Integer) result.status().get("id")) == STATUS_ACCEPTED &&
-                            tc.expectedOutput() != null &&
                             tc.expectedOutput().trim().equals(actual.trim());
 
             response.addResult(
@@ -76,6 +80,9 @@ public class SubmissionService {
 
         validateSourceCode(request.getSourceCode());
 
+        int languageId =
+                languageRegistry.getLanguageId(request.getLanguageKey());
+
         Submission submission = repository.save(
                 Submission.builder()
                         .userId(request.getUserId())
@@ -89,10 +96,18 @@ public class SubmissionService {
         List<JudgeTestCaseDTO> testCases =
                 problemClient.getAllTestCases(request.getProblemId());
 
-        for (JudgeTestCaseDTO tc : testCases) {
+        List<TestCaseResultDTO> results = new ArrayList<>();
+
+        boolean allPassed = true;
+        Long maxRuntime = null;
+        Integer maxMemory = null;
+
+        for (int i = 0; i < testCases.size(); i++) {
+
+            JudgeTestCaseDTO tc = testCases.get(i);
 
             Map<String, Object> raw =
-                    judge0Client.submit(request.getSourceCode(), tc.input(), JAVA_17_LANGUAGE_ID);
+                    judge0Client.submit(request.getSourceCode(), tc.input(), languageId);
 
             Judge0Result result = parseJudge0Result(raw);
             String actual = extractOutput(result);
@@ -100,30 +115,38 @@ public class SubmissionService {
             boolean passed =
                     result.status() != null &&
                             ((Integer) result.status().get("id")) == STATUS_ACCEPTED &&
-                            tc.expectedOutput() != null &&
                             tc.expectedOutput().trim().equals(actual.trim());
 
-            if (!passed) {
-                submission.setStatus(SubmissionStatus.WRONG_ANSWER);
-                repository.save(submission);
+            results.add(new TestCaseResultDTO(i + 1, passed));
 
-                return SubmitResponse.builder()
-                        .submissionId(submission.getId())
-                        .verdict("WRONG_ANSWER")
-                        .runtimeMs(parseTime(result.time()))
-                        .memoryKb(result.memory())
-                        .build();
+            if (!passed) {
+                allPassed = false;
+            }
+
+            // optional: track max runtime/memory
+            Long timeMs = parseTime(result.time());
+            if (timeMs != null) {
+                maxRuntime = maxRuntime == null ? timeMs : Math.max(maxRuntime, timeMs);
+            }
+
+            if (result.memory() != null) {
+                maxMemory = maxMemory == null
+                        ? result.memory()
+                        : Math.max(maxMemory, result.memory());
             }
         }
 
-        submission.setStatus(SubmissionStatus.ACCEPTED);
+        submission.setStatus(
+                allPassed ? SubmissionStatus.ACCEPTED : SubmissionStatus.WRONG_ANSWER
+        );
         repository.save(submission);
 
         return SubmitResponse.builder()
                 .submissionId(submission.getId())
-                .verdict("ACCEPTED")
-                .runtimeMs(null)   // could aggregate max runtime
-                .memoryKb(null)
+                .verdict(allPassed ? "ACCEPTED" : "WRONG_ANSWER")
+                .results(results)
+                .runtimeMs(maxRuntime)
+                .memoryKb(maxMemory)
                 .build();
     }
 
@@ -131,7 +154,7 @@ public class SubmissionService {
 
     private void validateSourceCode(String sourceCode) {
         if (sourceCode == null || sourceCode.isBlank()) {
-            throw new RuntimeException("Source code is missing");
+            throw new IllegalArgumentException("Source code is missing");
         }
     }
 

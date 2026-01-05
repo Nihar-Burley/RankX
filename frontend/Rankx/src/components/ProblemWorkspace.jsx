@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import axios from "axios";
+import api from "../services/api";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function ProblemWorkspace({ problem }) {
@@ -38,7 +38,7 @@ export default function ProblemWorkspace({ problem }) {
 
   /* ---------- fetch problem list ---------- */
   useEffect(() => {
-    axios.get("/api/problems")
+    api.get("/problems")
       .then(res => setProblems(res.data.content || []));
   }, []);
 
@@ -75,8 +75,8 @@ export default function ProblemWorkspace({ problem }) {
   useEffect(() => {
     if (!problem?.id) return;
 
-    axios
-      .get(`/api/problems/${problem.id}/testcases/samples`)
+    api
+      .get(`/problems/${problem.id}/testcases/samples`)
       .then(res => {
         setSampleTestCases(res.data || []);
         setActiveTestCase(0);
@@ -100,6 +100,84 @@ export default function ProblemWorkspace({ problem }) {
       setCode(map[defaultLang.languageKey] || "");
     }
   }, [problem]);
+
+
+
+  // ================= RUN HANDLER =================
+  const handleRun = async () => {
+    try {
+      setOutput("Running...");
+      setShowConsole(true);
+      setTestTab("output");
+
+      const res = await api.post("/submissions/run", {
+        problemId: problem.id,
+        languageKey,
+        sourceCode: code,
+      });
+
+      const formatted = res.data.results
+        .map((r, i) =>
+          `Case ${i + 1}:\n` +
+          `Input:\n${r.input}\n\n` +
+          `Expected Output:\n${r.expectedOutput}\n\n` +
+          `Your Output:\n${r.actualOutput}\n\n` +
+          `Result: ${r.passed ? "✅ Passed" : "❌ Failed"}\n`
+        )
+        .join("\n-----------------\n");
+
+      setOutput(formatted);
+    } catch (err) {
+      console.error(err);
+      setOutput(
+        err.response?.data?.message ||
+        "❌ Error while running code"
+      );
+    }
+  };
+
+  // ================= SUBMIT HANDLER =================
+const handleSubmit = async () => {
+  try {
+    setOutput("Submitting...");
+    setShowConsole(true);
+    setTestTab("output");
+
+    const res = await api.post("/submissions/submit", {
+      problemId: problem.id,
+      userId: 1, // TODO: from auth later
+      languageKey,
+      sourceCode: code,
+    });
+
+    const { submissionId, verdict, results } = res.data;
+
+    let outputText = `📨 Submission ID: ${submissionId}\n\n`;
+
+    // --- Testcase-wise result ---
+    results.forEach(tc => {
+      outputText +=
+        `Hidden Test Case ${tc.index}: ` +
+        `${tc.passed ? "✅ Passed" : "❌ Failed"}\n`;
+    });
+
+    // --- Final verdict ---
+    outputText += `\n====================\n`;
+    outputText += `FINAL VERDICT: ${
+      verdict === "ACCEPTED" ? "✅ ACCEPTED" : "❌ " + verdict
+    }\n`;
+
+    setOutput(outputText);
+  } catch (err) {
+    console.error(err);
+    setOutput(
+      err.response?.data?.message ||
+      "❌ Error while submitting code"
+    );
+  }
+};
+
+
 
   return (
     <div
@@ -213,9 +291,9 @@ export default function ProblemWorkspace({ problem }) {
           {/* ================= LEETCODE TESTCASE DRAWER ================= */}
           <div
             className={`absolute left-0 right-0 bottom-[56px] z-20
-    transition-transform duration-300 ease-in-out
-    ${showConsole ? "translate-y-0" : "translate-y-full"}
-  `}
+      transition-transform duration-300 ease-in-out
+      ${showConsole ? "translate-y-0" : "translate-y-full"}
+    `}
             style={{ height: "260px" }}
           >
             <div className="h-full bg-[#1e1e1e] border-t border-gray-700 flex flex-col">
@@ -245,8 +323,8 @@ export default function ProblemWorkspace({ problem }) {
                 <button
                   onClick={() => setTestTab("custom")}
                   className={`pb-1 ${testTab === "custom"
-                      ? "border-b-2 border-green-500 text-white"
-                      : "text-gray-400"
+                    ? "border-b-2 border-green-500 text-white"
+                    : "text-gray-400"
                     }`}
                 >
                   Custom Testcase
@@ -298,39 +376,39 @@ export default function ProblemWorkspace({ problem }) {
                 )}
 
                 {/* CUSTOM TESTCASE TAB */}
-{testTab === "custom" && (
-  <div className="flex flex-col gap-3">
-    <div className="text-gray-400 text-sm">
-      Custom Input:
-    </div>
+                {testTab === "custom" && (
+                  <div className="flex flex-col gap-3">
+                    <div className="text-gray-400 text-sm">
+                      Custom Input:
+                    </div>
 
-<textarea
-  value={customInput}
-  onChange={(e) => setCustomInput(e.target.value)}
-  placeholder={
-    sampleTestCases.length > 0
-      ? `Example (from sample testcase):\n\n${sampleTestCases[0].input}`
-      : "Enter input exactly as stdin"
-  }
-  className="w-full h-32 bg-[#1a1a1a] text-gray-200 p-3 rounded resize-none outline-none border border-gray-700 focus:border-green-500"
-/>
+                    <textarea
+                      value={customInput}
+                      onChange={(e) => setCustomInput(e.target.value)}
+                      placeholder={
+                        sampleTestCases.length > 0
+                          ? `Example (from sample testcase):\n\n${sampleTestCases[0].input}`
+                          : "Enter input exactly as stdin"
+                      }
+                      className="w-full h-32 bg-[#1a1a1a] text-gray-200 p-3 rounded resize-none outline-none border border-gray-700 focus:border-green-500"
+                    />
 
 
-    <div className="flex justify-end">
-      <button
-        onClick={() => {
-          // TEMP: frontend-only
-          setOutput("Running with custom input...\n\n" + customInput);
-          setTestTab("output");
-          setShowConsole(true);
-        }}
-        className="px-4 py-1 bg-green-600 rounded text-white text-sm"
-      >
-        Run Custom Input
-      </button>
-    </div>
-  </div>
-)}
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => {
+                          // TEMP: frontend-only
+                          setOutput("Running with custom input...\n\n" + customInput);
+                          setTestTab("output");
+                          setShowConsole(true);
+                        }}
+                        className="px-4 py-1 bg-green-600 rounded text-white text-sm"
+                      >
+                        Run Custom Input
+                      </button>
+                    </div>
+                  </div>
+                )}
 
 
               </div>
@@ -351,17 +429,19 @@ export default function ProblemWorkspace({ problem }) {
 
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  setOutput("Sample output...");
-                  setShowConsole(true);
-                }}
+                onClick={handleRun}
                 className="px-4 py-1 bg-gray-600 rounded"
               >
                 Run
               </button>
-              <button className="px-4 py-1 bg-green-600 rounded">
+
+              <button
+                onClick={handleSubmit}
+                className="px-4 py-1 bg-green-600 rounded"
+              >
                 Submit
               </button>
+
             </div>
           </div>
         </div>
@@ -411,8 +491,8 @@ export default function ProblemWorkspace({ problem }) {
                         setSidebarOpen(false);
                       }}
                       className={`px-4 py-3 cursor-pointer border-b border-gray-700
-                        hover:bg-[#2d2d2d]
-                        ${p.id === problem.id ? "text-green-400 bg-[#2d2d2d]" : ""}`}
+                          hover:bg-[#2d2d2d]
+                          ${p.id === problem.id ? "text-green-400 bg-[#2d2d2d]" : ""}`}
                     >
                       <span className="mr-2 text-gray-400">{idx + 1}.</span>
                       {p.title}
@@ -426,23 +506,23 @@ export default function ProblemWorkspace({ problem }) {
 
       {/* ================= STYLES ================= */}
       <style>{`
-        .nav-icon {
-          padding: 6px 10px;
-          border-radius: 6px;
-          background: #2d2d2d;
-        }
-        .nav-icon:hover {
-          background: #3d3d3d;
-        }
-        .icon-btn {
-          padding: 6px 8px;
-          background: #2d2d2d;
-          border-radius: 6px;
-        }
-        .icon-btn:hover {
-          background: #3d3d3d;
-        }
-      `}</style>
+          .nav-icon {
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: #2d2d2d;
+          }
+          .nav-icon:hover {
+            background: #3d3d3d;
+          }
+          .icon-btn {
+            padding: 6px 8px;
+            background: #2d2d2d;
+            border-radius: 6px;
+          }
+          .icon-btn:hover {
+            background: #3d3d3d;
+          }
+        `}</style>
     </div>
   );
 }

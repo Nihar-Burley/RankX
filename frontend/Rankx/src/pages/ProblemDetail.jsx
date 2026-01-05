@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import ProblemWorkspace from "../components/ProblemWorkspace";
 
 
@@ -9,7 +9,8 @@ export default function ProblemDetail() {
   const [problem, setProblem] = useState(null);
 
   useEffect(() => {
-    axios.get(`/api/problems/${id}`)
+
+    api.get(`/problems/${id}`)
       .then(res => setProblem(res.data));
   }, [id]);
 
