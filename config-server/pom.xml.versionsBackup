@@ -10,7 +10,7 @@
 
     <groupId>com.application</groupId>
     <artifactId>config-server</artifactId>
-    <version>0.0.10-SNAPSHOT</version>
+    <version>0.0.2</version>
     <name>config-server</name>
     <description>Config server</description>
 
