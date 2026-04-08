@@ -1,24 +1,87 @@
-# Maven
-target/
-*.jar
-
-# IDE
-.idea/
-*.iml
-.vscode/
-
-# Logs
-*.log
-
-# OS files
+# ===============================
+# OS / System Files
+# ===============================
 .DS_Store
 Thumbs.db
 
-# Env
-.env
+# ===============================
+# IDE / Editor
+# ===============================
+.idea/
+.vscode/
+*.iml
+
+# ===============================
+# Logs
+# ===============================
+logs/
+*.log
+
+# ===============================
+# Java / Maven
+# ===============================
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# Build info (generated files)
+**/build-info.txt
+
+# ===============================
+# Node / Frontend
+# ===============================
+node_modules/
+**/node_modules/
+
+# Lock files (optional – keep if needed)
+# If team-based project, you may WANT to keep them
+# Remove below lines if you want to track them
+# package-lock.json
+# yarn.lock
+
+# npm configs (if sensitive)
 
 
-# Frontend
-node_modules
-dist
+# Build folders
+dist/
+build/
+.next/
+out/
+
+# ===============================
+# Environment / Secrets
+# ===============================
 .env
+.env.*
+*.env
+
+# ===============================
+# Docker
+# ===============================
+*.pid
+*.seed
+*.pid.lock
+
+# ===============================
+# Nexus / Sonatype
+# ===============================
+sonatype-work/
+nexus-data/
+
+# ===============================
+# Temporary / Scripts
+# ===============================
+*.tmp
+*.temp
+
+# ===============================
+# Mac Specific (extra safety)
+# ===============================
+.AppleDouble
+.LSOverride
