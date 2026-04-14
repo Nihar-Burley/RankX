@@ -1,7 +1,7 @@
 {
   "name": "rankx",
   "private": false,
-  "version": "0.0.10",
+  "version": "1.0.10",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "publishConfig": {
-    "registry": "https://prelive.trainwithats.online/nexus/repository/npm-trainwithats-hosted/"
+    "registry": "https://trainwithats.online/nexus/repository/npm-trainwithats-release/"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

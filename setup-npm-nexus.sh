@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# Configuration
-NEXUS_NPM_HOSTED="https://prelive.trainwithats.online/nexus/repository/npm-trainwithats-hosted/"
+# ✅ Configuration - Pointing to your new production URLs
+NEXUS_NPM_SNAPSHOT="https://trainwithats.online/nexus/repository/npm-trainwithats-snapshort/"
+NEXUS_NPM_RELEASE="https://trainwithats.online/nexus/repository/npm-trainwithats-release/"
 
 # Find frontend directories (Rankx and Rankx-admin)
-for dir in frontend/Rankx frontend/Rankx-admin; do
+for dir in frontend/rankx frontend/rankx-admin; do
     if [ -d "$dir" ]; then
         echo "--------------------------------------------------------"
         echo "Processing Frontend: $dir"
@@ -12,29 +13,36 @@ for dir in frontend/Rankx frontend/Rankx-admin; do
 
         cd "$dir" || exit
 
-        # 1. Ensure 'private' is removed so we can publish
-        sed -i '' 's/"private": true,//g' package.json
+        # 1. Ensure 'private' is removed and cleanup any existing lockfiles for a clean push
+        # Using sed compatibility for both Mac (sed -i '') and Linux (sed -i)
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' 's/"private": true,//g' package.json
+        else
+            sed -i 's/"private": true,//g' package.json
+        fi
 
-        # 2. Upload 10 SNAPSHOTS
-        echo "Uploading 10 SNAPSHOT versions..."
+        # 2. Upload 10 SNAPSHOTS (1.0.0-SNAPSHOT.1 to 1.0.0-SNAPSHOT.10)
+        echo "🚀 Uploading 10 SNAPSHOT versions to $NEXUS_NPM_SNAPSHOT"
         for i in {1..10}; do
-            # Set version with a unique build suffix for snapshots
-            npm version 0.0.1-SNAPSHOT.$i --no-git-tag-version --allow-same-version
-            echo "Pushing Snapshot build #$i..."
-            npm publish --registry=$NEXUS_NPM_HOSTED --quiet
+            VERSION="1.0.0-SNAPSHOT.$i"
+            npm version "$VERSION" --no-git-tag-version --allow-same-version
+            echo "Pushing Snapshot build #$i ($VERSION)..."
+            npm publish --registry="$NEXUS_NPM_SNAPSHOT" --quiet
         done
 
-        # 3. Upload 10 RELEASES
-        echo "Uploading 10 RELEASE versions..."
+        # 3. Upload 10 RELEASES (1.0.1 to 1.0.10)
+        echo "🎯 Uploading 10 RELEASE versions to $NEXUS_NPM_RELEASE"
         for i in {1..10}; do
-            # Set unique release versions (0.0.1, 0.0.2, etc.)
-            npm version 0.0.$i --no-git-tag-version --allow-same-version
-            echo "Pushing Release build #$i..."
-            npm publish --registry=$NEXUS_NPM_HOSTED --quiet
+            VERSION="1.0.$i"
+            npm version "$VERSION" --no-git-tag-version --allow-same-version
+            echo "Pushing Release build #$i ($VERSION)..."
+            npm publish --registry="$NEXUS_NPM_RELEASE" --quiet
         done
 
         cd ../..
+    else
+        echo "⚠️ Directory $dir not found. Skipping..."
     fi
 done
 
-echo "NPM projects processed!"
+echo "✅ All NPM artifacts processed successfully!"

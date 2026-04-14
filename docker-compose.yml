@@ -1,24 +1,74 @@
 version: '3.8'
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: submission-mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: application_submission_db
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
+  # --- INFRASTRUCTURE ---
+  config-server:
+    image: trainwithats.online:8083/config-server:1.0.0
+    container_name: config-server
     ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
+      - "8888:8888"
     networks:
-      - submission-network
+      - rankx-net
 
-volumes:
-  mysql_data:
+  discovery-server:
+    image: trainwithats.online:8083/discovery-server:1.0.0
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      - CONFIG_SERVER_URL=http://config-server:8888
+    depends_on:
+      - config-server
+    networks:
+      - rankx-net
+
+  # --- BACKEND SERVICES ---
+  api-gateway:
+    image: trainwithats.online:8083/api-gateway:1.0.0
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    depends_on:
+      - discovery-server
+    networks:
+      - rankx-net
+
+  auth-service:
+    image: trainwithats.online:8083/auth-service:1.0.0
+    container_name: auth-service
+    environment:
+      - CONFIG_SERVER_URL=http://config-server:8888
+    depends_on:
+      - discovery-server
+    networks:
+      - rankx-net
+
+  # ... [Repeat similar blocks for your other 9 backend services] ...
+
+  # --- FRONTEND ---
+  rankx-user:
+    image: trainwithats.online:8083/rankx:1.0.0
+    container_name: rankx-user
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - rankx-net
+
+  rankx-admin:
+    image: trainwithats.online:8083/rankx-admin:1.0.0
+    container_name: rankx-admin
+    ports:
+      - "81:80" # Map to 81 so it doesn't clash with user frontend
+    depends_on:
+      - api-gateway
+    networks:
+      - rankx-net
 
 networks:
-  submission-network:
+  rankx-net:
+    driver: bridge

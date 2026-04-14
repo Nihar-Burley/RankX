@@ -6,11 +6,11 @@
       plugins: [react(), tailwindcss()],
       server: {
         proxy: {
-          // 🔥 ALL APIs GO THROUGH API GATEWAY
-          '/api': {
-            target: 'http://localhost:8080',
-            changeOrigin: true,
-            secure: false,
+                '/api': {
+                  // Use the gateway service name (for docker-compose) or your ALB domain
+                  target: env.VITE_API_GATEWAY_URL || 'http://localhost:8080',
+                  changeOrigin: true,
+                  secure: false,
           }
         },
       },

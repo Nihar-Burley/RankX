@@ -11,12 +11,14 @@
 
 	<groupId>com.application</groupId>
 	<artifactId>submissionservice</artifactId>
-	<version>1.0.0-SNAPSHOT</version> <name>submission-service</name>
-	<description>Demo project for Spring Boot</description>
+	<version>1.0.0-SNAPSHOT</version>
+	<name>submission-service</name>
+	<description>Submission Service for RankHex</description>
 
 	<properties>
 		<java.version>21</java.version>
-		<spring-cloud.version>2024.0.0</spring-cloud.version> </properties>
+		<spring-cloud.version>2024.0.0</spring-cloud.version>
+	</properties>
 
 	<dependencies>
 		<dependency>
@@ -61,7 +63,8 @@
 			<dependency>
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-dependencies</artifactId>
-				<version>2024.0.0</version> <type>pom</type>
+				<version>2024.0.0</version>
+				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
 		</dependencies>
@@ -87,18 +90,21 @@
 	<distributionManagement>
 		<repository>
 			<id>nexus-trainwithats</id>
-			<url>https://prelive.trainwithats.online/nexus/repository/maven-trainwithats-hosted/</url>
+			<name>Nexus Release Repository</name>
+			<url>https://trainwithats.online/nexus/repository/maven-trainwithats-release/</url>
 		</repository>
 		<snapshotRepository>
 			<id>nexus-trainwithats</id>
-			<url>https://prelive.trainwithats.online/nexus/repository/maven-trainwithats-snapshots/</url>
+			<name>Nexus Snapshot Repository</name>
+			<url>https://trainwithats.online/nexus/repository/maven-trainwithats-snapshort/</url>
 		</snapshotRepository>
 	</distributionManagement>
 
 	<repositories>
 		<repository>
 			<id>nexus-trainwithats</id>
-			<url>https://prelive.trainwithats.online/nexus/repository/maven-all-public/</url>
+			<name>Nexus Group Repository</name>
+			<url>https://trainwithats.online/nexus/repository/maven-trainwithats-group/</url>
 			<releases><enabled>true</enabled></releases>
 			<snapshots><enabled>true</enabled></snapshots>
 		</repository>
