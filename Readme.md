@@ -14,16 +14,12 @@ Understanding how Nexus organizes data is critical for proper development workfl
 
 ### A. Repository Types
 
-| Type 	 | Name 	 | How it Works 	 | Purpose |
-|--------|--------|----------------|---------|
-
-| **Proxy** | `maven-central` |It acts as an "intermediary." When you request a library (like Spring Boot), Nexus downloads it from the internet once and caches it locally. | Saves bandwidth and ensures build stability if the external site goes down.|
-
+| Type | Name | How it Works | Purpose |
+|------|------|------|------|
+| **Proxy** | `maven-central` | It acts as an "intermediary." When you request a library (like Spring Boot), Nexus downloads it from the internet once and caches it locally. | Saves bandwidth and ensures build stability if the external site goes down.|
 | **Hosted** | `maven-releases` | A private storage area owned by RankHex. Only internal developers can push code here. | Stores our proprietary microservices and internal tools. |
-
 | **Group**| `maven-public` | A "Virtual" repository. It combines multiple Proxy and Hosted repos into one single URL. | Developers only need to put ONE URL in their `settings.xml` to see everything. |
 
-Export to Sheets
 
 ### B. Versioning Logic: Release vs. Snapshot
 
@@ -138,17 +134,16 @@ docker push trainwithats.online:8083/your-service:1.0.1
 
 ## 6. Repository Architecture Reference
 
-| Repository Name | Format | Type | Port | Use Case | 
-|-----------------|--------|------|------|----------|
+------
 
-| **maven-public**| Maven | **Group** | 8081 | The main URL for `settings.xml`. |
-
-| **maven-trainwithats-release** | Maven | **Hosted** | 8081 | Stable production JARs. |
-
-| **maven-trainwithats-snapshort** | Maven | **Hosted** | 8081 | Daily development builds. |
-| **docker-trainwithats-hosted** | Docker | **Hosted** | 8083 | Pushing images. |
-| **docker-trainwithats-group** | Docker | **Group** | 8082 | Pulling images. |
-
+| Type	| Repository Name	| How it Works	| Purpose |
+|:-----:|-----------------|---------------|---------|
+| **Proxy**	| maven-proxy / npm-proxy	| Acts as an intermediary; downloads and caches public libraries locally.	| Reduces external bandwidth and ensures build stability if public registries are down. |
+| **Hosted** | maven-trainwithats-release	| A private, Immutable store for final versions of internal code.	| Stores production-ready internal microservices (e.g., v1.0.0). |
+| **Hosted**	| maven-trainwithats-snapshort | A private, Mutable store for active development builds. | Stores frequent iterations and daily builds (e.g., v1.0.1-SNAPSHOT). |
+| **Hosted**	| docker-trainwithats-hosted | A private registry for internal container images. | Used for docker push (Port 8083) of application images. |
+| **Group**	| maven-public	| A "Virtual" umbrella that combines all Maven repos into one URL. | Provides a single endpoint for developers; prioritizes internal code over public code. |
+| **Group**	| docker-trainwithats-group	| Combines private images and Docker Hub proxies. | Used for docker pull (Port 8082) for all environments. |
 
 ----------
 
