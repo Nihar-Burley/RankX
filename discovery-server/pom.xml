@@ -65,12 +65,12 @@
 		<repository>
 			<id>nexus-trainwithats</id>
 			<name>Nexus Release Repository</name>
-			<url>https://trainwithats.online/nexus/repository/maven-trainwithats-release/</url>
+			<url>https://prelive.trainwithats.online/nexus/repository/maven-trainwithats-release/</url>
 		</repository>
 		<snapshotRepository>
 			<id>nexus-trainwithats</id>
 			<name>Nexus Snapshot Repository</name>
-			<url>https://trainwithats.online/nexus/repository/maven-trainwithats-snapshort/</url>
+			<url>https://prelive.trainwithats.online/nexus/repository/maven-trainwithats-snapshot/</url>
 		</snapshotRepository>
 	</distributionManagement>
 
@@ -78,9 +78,33 @@
 		<repository>
 			<id>nexus-trainwithats</id>
 			<name>Nexus Group Repository</name>
-			<url>https://trainwithats.online/nexus/repository/maven-trainwithats-group/</url>
+			<url>https://prelive.trainwithats.online/nexus/repository/maven-trainwithats-group/</url>
 			<releases><enabled>true</enabled></releases>
 			<snapshots><enabled>true</enabled></snapshots>
 		</repository>
 	</repositories>
+
+
+	<!--	<distributionManagement>-->
+<!--		<repository>-->
+<!--			<id>nexus-trainwithats</id>-->
+<!--			<name>Nexus Release Repository</name>-->
+<!--			<url>https://trainwithats.online/nexus/repository/maven-trainwithats-release/</url>-->
+<!--		</repository>-->
+<!--		<snapshotRepository>-->
+<!--			<id>nexus-trainwithats</id>-->
+<!--			<name>Nexus Snapshot Repository</name>-->
+<!--			<url>https://trainwithats.online/nexus/repository/maven-trainwithats-snapshort/</url>-->
+<!--		</snapshotRepository>-->
+<!--	</distributionManagement>-->
+
+<!--	<repositories>-->
+<!--		<repository>-->
+<!--			<id>nexus-trainwithats</id>-->
+<!--			<name>Nexus Group Repository</name>-->
+<!--			<url>https://trainwithats.online/nexus/repository/maven-trainwithats-group/</url>-->
+<!--			<releases><enabled>true</enabled></releases>-->
+<!--			<snapshots><enabled>true</enabled></snapshots>-->
+<!--		</repository>-->
+<!--	</repositories>-->
 </project>

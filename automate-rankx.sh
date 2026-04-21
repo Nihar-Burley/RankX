@@ -3,8 +3,8 @@
 # --- 1. CONFIGURATION ---
 PUSH_REGISTRY="trainwithats.online:8083"
 NEXUS_USER="admin"
-NEXUS_PASS="admin"
-VERSION="1.1.1"
+NEXUS_PASS="admin123"
+VERSION="1.0.0"
 
 # Core backbone services only
 CORE_SERVICES=("config-server" "discovery-server" "api-gateway")
