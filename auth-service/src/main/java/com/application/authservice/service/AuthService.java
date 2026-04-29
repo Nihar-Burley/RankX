@@ -3,10 +3,10 @@ package com.application.authservice.service;
 import com.application.authservice.dto.request.LoginRequest;
 import com.application.authservice.dto.request.OtpRequest;
 import com.application.authservice.dto.request.RegisterRequest;
+import com.application.authservice.dto.response.ApiResponse;
 import com.application.authservice.entity.AuthUsers;
 import com.application.authservice.repository.AuthUserRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,22 +14,35 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthService {
 
-    @Autowired
-    private AuthUserRepository repo;
+    private final AuthUserRepository repo;
+    private final PasswordEncoder encoder;
+    private final JwtService jwtService;
+    private final OtpService otpService;
 
-    @Autowired
-    private PasswordEncoder encoder;
-
-    @Autowired
-    private JwtService jwtService;
-
-    @Autowired
-    private OtpService otpService;
+    public AuthService(
+            AuthUserRepository repo,
+            PasswordEncoder encoder,
+            JwtService jwtService,
+            OtpService otpService
+    ) {
+        this.repo = repo;
+        this.encoder = encoder;
+        this.jwtService = jwtService;
+        this.otpService = otpService;
+    }
 
     // REGISTER
-    public String register(RegisterRequest req) {
+    public ApiResponse register(RegisterRequest req) {
 
-        log.info("register method ---> "+req);
+        log.info("Register requested for username={}", req.getUsername());
+
+        if (repo.findByUsername(req.getUsername()).isPresent()) {
+            throw new IllegalStateException("Username is already registered");
+        }
+
+        if (repo.findByMobile(req.getMobile()).isPresent()) {
+            throw new IllegalStateException("Mobile number is already registered");
+        }
 
         AuthUsers user = AuthUsers.builder()
                 .username(req.getUsername())
@@ -40,14 +53,14 @@ public class AuthService {
                 .build();
 
         repo.save(user);
-        String otp=otpService.generateAndSaveOtp(req.getMobile());
-        return otp;
+        otpService.generateAndSaveOtp(req.getMobile());
+        return new ApiResponse(true, "Registration successful. Verify OTP to activate the account.");
     }
 
     // VERIFY OTP
-    public String verifyOtp(OtpRequest req) {
+    public ApiResponse verifyOtp(OtpRequest req) {
 
-        log.info("verifyOtp method ---> "+req);
+        log.info("OTP verification requested for mobile={}", req.getMobile());
 
         boolean valid =
                 otpService.verifyOtp(req.getMobile(), req.getOtp());
@@ -61,13 +74,13 @@ public class AuthService {
 
         user.setEnabled(true);
         repo.save(user);
-        return "User is successfully verified";
+        return new ApiResponse(true, "User is successfully verified");
     }
 
     // LOGIN
     public String login(LoginRequest req) {
 
-        log.info("Login method ---> "+req);
+        log.info("Login requested for username={}", req.getUsername());
 
         AuthUsers user =
                 repo.findByUsername(req.getUsername())

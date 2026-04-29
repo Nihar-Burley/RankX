@@ -37,7 +37,7 @@ public class SubmissionService {
     }
 
     // ================= RUN =================
-    public RunResponse run(RunRequest request) {
+    public RunResponse run(RunRequest request, String customInput) {
 
         validateSourceCode(request.getSourceCode());
 
@@ -46,8 +46,12 @@ public class SubmissionService {
 
         RunResponse response = new RunResponse();
 
-        List<SampleTestCaseDTO> testCases =
-                problemClient.getSampleTestCases(request.getProblemId());
+        List<SampleTestCaseDTO> testCases;
+        if (customInput != null && !customInput.isBlank()) {
+            testCases = List.of(new SampleTestCaseDTO(customInput, ""));
+        } else {
+            testCases = problemClient.getSampleTestCases(request.getProblemId());
+        }
 
         log.info("RUN | Testcases fetched = {}", testCases.size());
 
@@ -62,7 +66,7 @@ public class SubmissionService {
             boolean passed =
                     result.status() != null &&
                             ((Integer) result.status().get("id")) == STATUS_ACCEPTED &&
-                            tc.expectedOutput().trim().equals(actual.trim());
+                            (customInput == null || customInput.isBlank() || tc.expectedOutput().trim().equals(actual.trim()));
 
             response.addResult(
                     tc.input(),
@@ -76,7 +80,7 @@ public class SubmissionService {
     }
 
     // ================= SUBMIT =================
-    public SubmitResponse submit(SubmitRequest request) {
+    public SubmitResponse submit(SubmitRequest request, Long userId) {
 
         validateSourceCode(request.getSourceCode());
 
@@ -85,7 +89,7 @@ public class SubmissionService {
 
         Submission submission = repository.save(
                 Submission.builder()
-                        .userId(request.getUserId())
+                        .userId(userId)
                         .problemId(request.getProblemId())
                         .languageKey(request.getLanguageKey())
                         .sourceCode(request.getSourceCode())
@@ -139,6 +143,8 @@ public class SubmissionService {
         submission.setStatus(
                 allPassed ? SubmissionStatus.ACCEPTED : SubmissionStatus.WRONG_ANSWER
         );
+        submission.setRuntimeMs(maxRuntime == null ? null : maxRuntime.intValue());
+        submission.setMemoryKb(maxMemory);
         repository.save(submission);
 
         return SubmitResponse.builder()

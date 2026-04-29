@@ -5,15 +5,10 @@ import com.application.attemptservice.dto.StartAttemptRequest;
 import com.application.attemptservice.service.AttemptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
-import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.UUID;
 
@@ -25,11 +20,13 @@ public class AttemptController {
 
     private final AttemptService attemptService;
 
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/start")
-    public ResponseEntity<?> startAttempt(
+    public ResponseEntity<UUID> startAttempt(
             @RequestBody StartAttemptRequest request,
-            @RequestHeader("X-User-Id") UUID userId
+            Authentication authentication
     ) {
+        UUID userId = (UUID) authentication.getPrincipal();
         log.info("Creating attempt for userId={}", userId);
 
         return ResponseEntity.ok(
@@ -41,9 +38,10 @@ public class AttemptController {
     @PostMapping("/{attemptId}/answer")
     public ResponseEntity<Void> saveAnswer(
             @PathVariable UUID attemptId,
-            @RequestBody AnswerRequest request
+            @RequestBody AnswerRequest request,
+            Authentication authentication
     ) {
-        attemptService.saveAnswer(attemptId, request);
+        attemptService.saveAnswer(attemptId, (UUID) authentication.getPrincipal(), request);
         return ResponseEntity.ok().build();
     }
 
@@ -51,9 +49,9 @@ public class AttemptController {
     @PostMapping("/{attemptId}/submit")
     public ResponseEntity<Void> submitAttempt(
             @PathVariable UUID attemptId,
-            @RequestHeader("X-User-Id") UUID userId
+            Authentication authentication
     ) {
-        attemptService.submitAttempt(attemptId, userId);
+        attemptService.submitAttempt(attemptId, (UUID) authentication.getPrincipal());
         return ResponseEntity.ok().build();
     }
 }

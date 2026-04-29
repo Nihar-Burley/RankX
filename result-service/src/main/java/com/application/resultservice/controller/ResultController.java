@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,26 +22,31 @@ public class ResultController {
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/evaluate/{attemptId}")
     public ResponseEntity<ResultResponse> evaluate(
-            @PathVariable UUID attemptId
+            @PathVariable UUID attemptId,
+            Authentication authentication
     ) {
+        UUID userId = (UUID) authentication.getPrincipal();
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(resultService.evaluateAttempt(attemptId));
+                .body(resultService.evaluateAttempt(attemptId, userId));
     }
 
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/{attemptId}")
     public ResponseEntity<ResultResponse> getResult(
-            @PathVariable UUID attemptId
+            @PathVariable UUID attemptId,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(resultService.getResultByAttempt(attemptId));
+        UUID userId = (UUID) authentication.getPrincipal();
+        return ResponseEntity.ok(resultService.getResultByAttempt(attemptId, userId));
     }
 
     @PreAuthorize("hasRole('USER')")
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<ResultResponse>> getUserResults(
-            @PathVariable UUID userId
+    @GetMapping("/me")
+    public ResponseEntity<List<ResultResponse>> getMyResults(
+            Authentication authentication
     ) {
+        UUID userId = (UUID) authentication.getPrincipal();
         return ResponseEntity.ok(resultService.getResultsByUser(userId));
     }
 }

@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
@@ -13,11 +14,11 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private static final String SECRET =
-            "n7m4FJw9K9JH6v0K+K4F4A7Q9KJZ9JH1L4v9F2Q1G8E=";
+    @Value("${security.jwt.secret:n7m4FJw9K9JH6v0K+K4F4A7Q9KJZ9JH1L4v9F2Q1G8E=}")
+    private String secret;
 
     private Key getKey() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET));
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
 
     public String generateToken(AuthUsers user) {

@@ -1,14 +1,15 @@
 package com.application.problemservice.service;
 
 import com.application.problemservice.dto.*;
+import com.application.problemservice.entity.Problem;
 import com.application.problemservice.entity.TestCase;
+import com.application.problemservice.repository.ProblemRepository;
 import com.application.problemservice.repository.TestCaseRepository;
 import com.application.problemservice.service.TestCaseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -16,17 +17,24 @@ import java.util.stream.Collectors;
 public class TestCaseServiceImpl implements TestCaseService {
 
     private final TestCaseRepository testCaseRepository;
+    private final ProblemRepository problemRepository;
 
-    public TestCaseServiceImpl(TestCaseRepository testCaseRepository) {
+    public TestCaseServiceImpl(
+            TestCaseRepository testCaseRepository,
+            ProblemRepository problemRepository
+    ) {
         this.testCaseRepository = testCaseRepository;
+        this.problemRepository = problemRepository;
     }
 
     // ---------------- ADMIN ----------------
     @Override
     public TestCaseResponse addTestCase(Long problemId, TestCaseRequest request) {
+        Problem problem = problemRepository.findById(problemId)
+                .orElseThrow(() -> new RuntimeException("Problem not found"));
 
         TestCase testCase = TestCase.builder()
-                .id(problemId)
+                .problem(problem)
                 .input(request.getInput())
                 .expectedOutput(request.getExpectedOutput())
                 .isSample(request.getIsSample())

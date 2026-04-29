@@ -1,10 +1,10 @@
 package com.application.apigateway.security;
 
 import io.jsonwebtoken.Claims;
-
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -12,12 +12,12 @@ import java.security.Key;
 @Component
 public class JwtUtil {
 
-    private static final String SECRET =
-            "n7m4FJw9K9JH6v0K+K4F4A7Q9KJZ9JH1L4v9F2Q1G8E=";
+    @Value("${security.jwt.secret:n7m4FJw9K9JH6v0K+K4F4A7Q9KJZ9JH1L4v9F2Q1G8E=}")
+    private String secret;
 
     private Key getKey() {
         return Keys.hmacShaKeyFor(
-                Decoders.BASE64.decode(SECRET)
+                Decoders.BASE64.decode(secret)
         );
     }
 

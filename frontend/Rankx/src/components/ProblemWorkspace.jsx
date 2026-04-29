@@ -114,6 +114,7 @@ export default function ProblemWorkspace({ problem }) {
         problemId: problem.id,
         languageKey,
         sourceCode: code,
+        customInput: testTab === "custom" ? customInput : "",
       });
 
       const formatted = res.data.results
@@ -145,7 +146,6 @@ const handleSubmit = async () => {
 
     const res = await api.post("/submissions/submit", {
       problemId: problem.id,
-      userId: 1, // TODO: from auth later
       languageKey,
       sourceCode: code,
     });
@@ -396,12 +396,7 @@ const handleSubmit = async () => {
 
                     <div className="flex justify-end">
                       <button
-                        onClick={() => {
-                          // TEMP: frontend-only
-                          setOutput("Running with custom input...\n\n" + customInput);
-                          setTestTab("output");
-                          setShowConsole(true);
-                        }}
+                        onClick={handleRun}
                         className="px-4 py-1 bg-green-600 rounded text-white text-sm"
                       >
                         Run Custom Input

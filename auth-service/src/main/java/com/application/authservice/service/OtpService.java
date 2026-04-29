@@ -1,7 +1,6 @@
 package com.application.authservice.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,11 +11,13 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class OtpService {
 
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public OtpService(RedisTemplate<String, String> redisTemplate, PasswordEncoder passwordEncoder) {
+        this.redisTemplate = redisTemplate;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     public String generateAndSaveOtp(String mobile) {
 
@@ -24,7 +25,7 @@ public class OtpService {
                 ThreadLocalRandom.current().nextInt(100000, 999999)
         );
 
-        log.info("generateAndSaveOtp method generated otp ---> "+otp);
+        log.info("Generated OTP for mobile={} and stored it with expiry", mobile);
         redisTemplate.opsForValue()
                 .set(
                         "otp:" + mobile,

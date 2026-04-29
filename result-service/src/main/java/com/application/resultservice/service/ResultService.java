@@ -7,9 +7,9 @@ import java.util.UUID;
 
 public interface ResultService {
 
-    ResultResponse evaluateAttempt(UUID attemptId);
+    ResultResponse evaluateAttempt(UUID attemptId, UUID userId);
 
-    ResultResponse getResultByAttempt(UUID attemptId);
+    ResultResponse getResultByAttempt(UUID attemptId, UUID userId);
 
     List<ResultResponse> getResultsByUser(UUID userId);
 }

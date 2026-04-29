@@ -22,6 +22,11 @@ public class GatewayConfig {
                         .path("/api/auth/**")
                         .uri("lb://AUTH-SERVICE"))
 
+                .route("user-service", r -> r
+                        .path("/api/users/**")
+                        .filters(f -> f.filter(jwtAuthFilter))
+                        .uri("lb://USER-SERVICE"))
+
                 // ================= QUIZ SERVICE (PROTECTED) =================
                 .route("quiz-service", r -> r
                         .path("/api/quizzes/**","/api/admin/quizzes/**")
@@ -51,7 +56,7 @@ public class GatewayConfig {
 
                 // ================= PROBLEM SERVICE (PROTECTED) =================
                 .route("problem-service", r -> r
-                        .path("/api/problems/**")
+                        .path("/api/problems/**", "/api/admin/problems/**", "/api/admin/testcases/**")
                         .filters(f -> f.filter(jwtAuthFilter))
                         .uri("lb://PROBLEM-SERVICE"))
 

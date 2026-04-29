@@ -1,4 +1,4 @@
-package com.application.attemptservice.config;
+package com.application.userservice.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,8 +24,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/internal/**").permitAll()
-                        .requestMatchers("/api/attempts/**").authenticated()
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/api/users/**").authenticated()
                         .anyRequest().denyAll()
                 )
                 .addFilterBefore(gatewayAuthFilter, UsernamePasswordAuthenticationFilter.class);

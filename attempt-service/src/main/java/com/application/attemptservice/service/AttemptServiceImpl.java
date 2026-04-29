@@ -46,10 +46,14 @@ public class AttemptServiceImpl implements AttemptService {
 
 
     @Override
-    public void saveAnswer(UUID attemptId, AnswerRequest request) {
+    public void saveAnswer(UUID attemptId, UUID userId, AnswerRequest request) {
 
         Attempt attempt = attemptRepository.findById(attemptId)
                 .orElseThrow(() -> new RuntimeException("Attempt not found"));
+
+        if (!attempt.getUserId().equals(userId)) {
+            throw new SecurityException("Unauthorized attempt access");
+        }
 
         if (attempt.getStatus() == AttemptStatus.SUBMITTED) {
             throw new IllegalStateException("Cannot answer after submission");
@@ -61,8 +65,6 @@ public class AttemptServiceImpl implements AttemptService {
 
         answer.setSelectedOption(request.getSelectedOption());
         answerRepository.save(answer);
-
-        answerRepository.save(answer);
     }
 
     @Override
@@ -71,8 +73,6 @@ public class AttemptServiceImpl implements AttemptService {
         Attempt attempt = attemptRepository.findById(attemptId)
                 .orElseThrow(() -> new RuntimeException("Attempt not found"));
 
-        System.out.println("attempt.getUserId() ---------"+attempt.getUserId());
-        System.out.println("userId-----------------------"+userId);
         if (!attempt.getUserId().equals(userId)) {
             throw new SecurityException("Unauthorized attempt submission");
         }

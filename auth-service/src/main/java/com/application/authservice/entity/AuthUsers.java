@@ -1,7 +1,6 @@
 package com.application.authservice.entity;
 
 import jakarta.persistence.*;
-import jdk.jfr.DataAmount;
 import lombok.*;
 
 import java.util.UUID;
@@ -18,9 +17,17 @@ public class AuthUsers {
     @GeneratedValue
     private UUID id;
 
+    @Column(nullable = false, unique = true)
     private String username;
+
+    @Column(nullable = false)
     private String password;
+
+    @Column(nullable = false, unique = true)
     private String mobile;
+
+    @Column(nullable = false)
     private String role;
+
     private boolean enabled;
 }

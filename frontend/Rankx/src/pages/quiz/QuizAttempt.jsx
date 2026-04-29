@@ -19,6 +19,12 @@ const shuffleArray = (arr) => {
 
 const optionLabels = ["A", "B", "C", "D"];
 
+const normalizeOptions = (options = []) =>
+  shuffleArray(options).map((text, index) => ({
+    key: optionLabels[index],
+    text
+  }));
+
 const QuizAttempt = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
@@ -51,7 +57,7 @@ const QuizAttempt = () => {
         const questionRes = await getQuestionsByQuiz(quizId);
         const normalized = questionRes.data.map(q => ({
           ...q,
-          options: shuffleArray(q.options)
+          options: normalizeOptions(q.options)
         }));
 
         setQuestions(normalized);
@@ -105,22 +111,19 @@ const QuizAttempt = () => {
       .padStart(2, "0")}`;
   };
 
-  const handleOptionSelect = async (optionText) => {
+  const handleOptionSelect = async (option) => {
     const question = questions[current];
     if (!attemptId || !question) return;
 
-    const optionKey =
-      optionLabels[question.options.indexOf(optionText)];
-
     setAnswers(prev => ({
       ...prev,
-      [question.id]: { optionKey, optionText }
+      [question.id]: { optionKey: option.key, optionText: option.text }
     }));
 
     try {
       await saveAnswer(attemptId, {
         questionId: question.id,
-        selectedOption: optionKey
+        selectedOption: option.key
       });
     } catch (err) {
       console.error("Save answer failed", err);
@@ -292,19 +295,19 @@ const QuizAttempt = () => {
         <div className="space-y-4 mb-6">
           {question.options.map((opt, idx) => (
             <button
-              key={opt}
+              key={`${question.id}-${opt.key}-${opt.text}`}
               onClick={() => handleOptionSelect(opt)}
               className={`w-full p-4 rounded-xl flex gap-4 transition
                 ${
-                  selected === opt
+                  selected === opt.text
                     ? "bg-indigo-600"
                     : "bg-[#020617] hover:bg-indigo-700"
                 }`}
             >
               <div className="w-8 h-8 rounded-full bg-black/40 flex items-center justify-center font-bold">
-                {optionLabels[idx]}
+                {opt.key || optionLabels[idx]}
               </div>
-              {opt}
+              {opt.text}
             </button>
           ))}
         </div>

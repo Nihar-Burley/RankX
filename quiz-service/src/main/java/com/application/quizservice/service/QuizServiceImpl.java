@@ -101,7 +101,7 @@
         public void updateStatus(UUID quizId, QuizStatus status) {
             Quiz quiz = getQuizOrThrow(quizId);
 
-            if (status == QuizStatus.PUBLISHED) {
+            if (quiz.getStatus() == status) {
                 throw new IllegalStateException("Quiz is already published");
             }
 

@@ -7,7 +7,7 @@ import lombok.Data;
 @Builder
 public class UserAuthResponse {
 
-    private Long userId;
+    private String userId;
     private String username;
     private String role;
     private boolean enabled;

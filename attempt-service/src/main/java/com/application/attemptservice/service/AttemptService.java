@@ -6,11 +6,9 @@ import java.util.UUID;
 
 public interface AttemptService {
 
-
     UUID startAttempt(UUID quizId, UUID userId);
 
-
-    void saveAnswer(UUID attemptId, AnswerRequest request);
+    void saveAnswer(UUID attemptId, UUID userId, AnswerRequest request);
 
     void submitAttempt(UUID attemptId, UUID userId);
 }

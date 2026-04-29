@@ -24,19 +24,21 @@ public class ResultServiceImpl implements ResultService {
     private final QuestionServiceClient questionClient;
 
     @Override
-    public ResultResponse evaluateAttempt(UUID attemptId) {
-
+    public ResultResponse evaluateAttempt(UUID attemptId, UUID userId) {
         resultRepository.findByAttemptId(attemptId)
                 .ifPresent(r -> {
                     throw new IllegalStateException("Result already exists");
                 });
 
         AttemptDetails attempt = attemptClient.getAttemptDetails(attemptId);
+        if (!attempt.getUserId().equals(userId)) {
+            throw new SecurityException("Unauthorized result evaluation");
+        }
+
         List<QuestionAnswerDTO> correctAnswers =
                 questionClient.getCorrectAnswers(attempt.getQuizId());
 
         int score = 0;
-
         for (QuestionAnswerDTO q : correctAnswers) {
             String userAnswer = attempt.getAnswers().get(q.getQuestionId());
             if (q.getCorrectOption().equals(userAnswer)) {
@@ -57,18 +59,20 @@ public class ResultServiceImpl implements ResultService {
                 .build();
 
         resultRepository.save(result);
-
         return mapToResponse(result);
     }
 
     @Override
-    public ResultResponse getResultByAttempt(UUID attemptId) {
-
+    public ResultResponse getResultByAttempt(UUID attemptId, UUID userId) {
         return resultRepository.findByAttemptId(attemptId)
-                .map(this::mapToResponse)
-                .orElseGet(() -> evaluateAttempt(attemptId)); // 🔥 auto-create
+                .map(result -> {
+                    if (!result.getUserId().equals(userId)) {
+                        throw new SecurityException("Unauthorized result access");
+                    }
+                    return mapToResponse(result);
+                })
+                .orElseGet(() -> evaluateAttempt(attemptId, userId));
     }
-
 
     @Override
     public List<ResultResponse> getResultsByUser(UUID userId) {

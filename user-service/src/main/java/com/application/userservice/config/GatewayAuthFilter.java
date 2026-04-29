@@ -1,10 +1,9 @@
-package com.application.attemptservice.config;
+package com.application.userservice.config;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,7 +16,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
-@Slf4j
 public class GatewayAuthFilter extends OncePerRequestFilter {
 
     @Override
@@ -32,16 +30,14 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(userId) && StringUtils.hasText(role)) {
             String grantedRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
 
-            UsernamePasswordAuthenticationToken auth =
+            UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             UUID.fromString(userId),
                             null,
                             List.of(new SimpleGrantedAuthority(grantedRole))
                     );
 
-            SecurityContextHolder.getContext().setAuthentication(auth);
-        } else {
-            log.debug("No trusted gateway identity found for path={}", request.getRequestURI());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
         filterChain.doFilter(request, response);
