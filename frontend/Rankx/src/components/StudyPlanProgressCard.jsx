@@ -7,13 +7,13 @@ export default function StudyPlanProgressCard({ plan }) {
     <button
       type="button"
       onClick={() => navigate(`/my-progress?plan=${plan.studyPlanId}`)}
-      className="w-full rounded-3xl border border-slate-800 bg-slate-900 p-6 text-left transition hover:border-slate-700"
+      className="w-full rounded-3xl border border-slate-800 bg-slate-900 p-6 text-left transition hover:-translate-y-0.5 hover:border-slate-700"
     >
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-lg font-semibold text-white">{plan.title}</p>
           <p className="mt-2 text-sm text-slate-400">
-            {plan.track} - {plan.level}
+            {plan.track} • {plan.level}
           </p>
         </div>
         <div className="text-right">
@@ -29,9 +29,14 @@ export default function StudyPlanProgressCard({ plan }) {
           style={{ width: `${Math.min(Number(plan.completionPercentage || 0), 100)}%` }}
         />
       </div>
-      <p className="mt-4 text-sm text-slate-400">
-        Next item: {plan.nextItemTitle || "No next item yet"}
-      </p>
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <p className="text-sm text-slate-400">
+          Next item: {plan.nextItemTitle || "No next item yet"}
+        </p>
+        <span className="rounded-full border border-slate-700 bg-slate-950 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-300">
+          Open plan
+        </span>
+      </div>
     </button>
   );
 }

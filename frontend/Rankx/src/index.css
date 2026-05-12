@@ -36,9 +36,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(94, 234, 212, 0.14), transparent 28%),
-    radial-gradient(circle at 85% 12%, rgba(124, 156, 255, 0.12), transparent 22%),
-    linear-gradient(180deg, #08111f 0%, #09131f 52%, #060c16 100%);
+    radial-gradient(circle at top, rgba(94, 234, 212, 0.08), transparent 24%),
+    linear-gradient(180deg, #08111f 0%, #0a1220 52%, #070d16 100%);
   color: var(--text-primary);
   font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
@@ -81,6 +80,10 @@ textarea {
 @layer components {
   .app-shell {
     @apply min-h-screen px-4 py-6 text-slate-50 sm:px-6 lg:px-8;
+  }
+
+  .page-section {
+    @apply space-y-5;
   }
 
   .app-container {
@@ -152,6 +155,24 @@ textarea {
   }
 
   .input-base:focus-visible {
+    border-color: rgba(94, 234, 212, 0.9);
+    box-shadow:
+      0 0 0 1px rgba(94, 234, 212, 0.2),
+      0 0 0 4px rgba(94, 234, 212, 0.12);
+  }
+
+  .input {
+    @apply w-full rounded-2xl border px-4 py-3 text-sm text-slate-50 outline-none transition duration-200 placeholder:text-slate-500;
+    background: rgba(8, 17, 31, 0.76);
+    border-color: rgba(148, 163, 184, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  }
+
+  .input:hover {
+    border-color: rgba(148, 163, 184, 0.28);
+  }
+
+  .input:focus-visible {
     border-color: rgba(94, 234, 212, 0.9);
     box-shadow:
       0 0 0 1px rgba(94, 234, 212, 0.2),

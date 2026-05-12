@@ -17,6 +17,19 @@ const stateLabels = {
   LOCKED: "Locked",
 };
 
+const getItemRoute = (item) => {
+  if (!item?.referenceKey) {
+    return null;
+  }
+  if (item.itemType === "CODING_PROBLEM" && item.referenceKey.startsWith("problem-")) {
+    return `/problems/${item.referenceKey.replace("problem-", "")}`;
+  }
+  if (item.itemType === "QUIZ" && item.referenceKey.startsWith("quiz-")) {
+    return `/quiz/${item.referenceKey.replace("quiz-", "")}`;
+  }
+  return null;
+};
+
 export default function StudyPlanDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -97,7 +110,7 @@ export default function StudyPlanDetail() {
 
   return (
     <div className="app-container space-y-8">
-      <header className="rounded-3xl border border-slate-800 bg-slate-900 p-8">
+      <header className="rounded-[32px] border border-slate-800 bg-[radial-gradient(circle_at_top_right,_rgba(34,211,238,0.12),_transparent_30%),linear-gradient(135deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98))] p-8">
         <div className="flex flex-wrap items-center gap-3">
           <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-cyan-300">
             {plan.track}
@@ -113,6 +126,20 @@ export default function StudyPlanDetail() {
         </div>
         <h1 className="mt-4 text-4xl font-bold text-white">{plan.title}</h1>
         <p className="mt-3 max-w-3xl text-slate-400">{plan.description}</p>
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Track</p>
+            <p className="mt-3 text-xl font-semibold text-white">{plan.track}</p>
+          </div>
+          <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Level</p>
+            <p className="mt-3 text-xl font-semibold text-white">{plan.level}</p>
+          </div>
+          <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Steps</p>
+            <p className="mt-3 text-xl font-semibold text-white">{plan.items?.length || 0}</p>
+          </div>
+        </div>
         <div className="mt-6 flex flex-wrap gap-4">
           <button
             type="button"
@@ -157,8 +184,19 @@ export default function StudyPlanDetail() {
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-400">{item.description}</p>
             <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-400">
-              <span>Reference: {item.referenceKey}</span>
+              <span>{item.itemType === "QUIZ" ? "Quiz activity" : "Coding activity"} unlocks this step</span>
               <span>{item.estimatedMinutes} min</span>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-3">
+              {getItemRoute(item) ? (
+                <button
+                  type="button"
+                  onClick={() => navigate(getItemRoute(item))}
+                  className="rounded-2xl border border-slate-700 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
+                >
+                  {item.itemType === "QUIZ" ? "Open quiz" : "Open problem"}
+                </button>
+              ) : null}
             </div>
           </div>
         ))}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getResultReview } from "../../services/resultApi";
+import { trackProductEvent } from "../../utils/eventTracker";
 
 const formatPercentage = (value) => `${Number(value || 0).toFixed(2)}%`;
 
@@ -22,6 +23,21 @@ export default function QuizReview() {
       try {
         const response = await getResultReview(attemptId);
         setReview(response.data);
+        trackProductEvent(
+          {
+            eventName: "QUIZ_REVIEW_VIEWED",
+            eventCategory: "QUIZ",
+            source: "WEB",
+            track: "QUIZ",
+            contentType: "QUIZ_REVIEW",
+            contentId: `attempt-${attemptId}`,
+            contentTitle: response.data?.quizTitle || `Quiz Review ${attemptId}`,
+            parentContentId: response.data?.quizId ? `quiz-${response.data.quizId}` : undefined,
+            topic: response.data?.subCategory || response.data?.category,
+            numericValue: response.data?.percentage || 0,
+          },
+          { oncePerSessionKey: `quiz-review-${attemptId}` }
+        );
         setError("");
       } catch (err) {
         if (err.response?.status === 401) {
@@ -138,6 +154,17 @@ export default function QuizReview() {
                     : "N/A"}
                 </p>
               </div>
+            </section>
+
+            <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
+              <h2 className="text-xl font-semibold">What this attempt tells you</h2>
+              <p className="mt-3 text-sm leading-7 text-slate-300">
+                {review.percentageDelta != null && review.percentageDelta > 0
+                  ? "You improved on this quiz compared with your most recent previous attempt. Use the incorrect answers below to lock in the gain."
+                  : review.percentageDelta != null && review.percentageDelta < 0
+                    ? "This attempt dropped against your previous result. Review the missed questions carefully before retaking the quiz."
+                    : "Use the question review below to understand what you already know well and where recall is still shaky."}
+              </p>
             </section>
 
             <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6">

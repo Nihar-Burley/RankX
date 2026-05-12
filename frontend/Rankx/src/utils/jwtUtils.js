@@ -4,7 +4,7 @@ export const getRoleFromToken = (token) => {
     try {
         const decoded = jwtDecode(token);
         return decoded.role; // must match backend claim
-    } catch (err) {
+    } catch {
         return null;
     }
 };

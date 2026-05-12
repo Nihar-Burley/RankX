@@ -1,30 +1,25 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
-import { motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardChecklist from "../components/DashboardChecklist";
+import EmptyState from "../components/EmptyState";
+import ErrorState from "../components/ErrorState";
+import LoadingState from "../components/LoadingState";
+import PageHeader from "../components/PageHeader";
+import PageSection from "../components/PageSection";
 import RecommendedActionCard from "../components/RecommendedActionCard";
 import RecommendationCardsSection from "../components/RecommendationCardsSection";
-import { getMyDashboardSummary, getMyProfile } from "../services/userApi";
+import StatCard from "../components/StatCard";
+import { logoutUser } from "../services/authService";
 import { getMyResults } from "../services/resultApi";
 import { getMyRecentSubmissions } from "../services/submissionApi";
-import { logoutUser } from "../services/authService";
+import { getMyAnalytics, getMyDashboardSummary, getMyProfile, normalizeRecommendation } from "../services/userApi";
+import { trackProductEvent } from "../utils/eventTracker";
 import { subscribeToProgressUpdates } from "../utils/progressSync";
 
-const practiceCards = [
-  {
-    title: "Quiz Practice",
-    description:
-      "Review your quiz performance and continue improving by topic.",
-    route: "/quiz",
-    gradient: "from-blue-600 to-indigo-600",
-  },
-  {
-    title: "Coding Practice",
-    description:
-      "Return to coding challenges and monitor your recent submissions.",
-    route: "/problems",
-    gradient: "from-emerald-600 to-green-600",
-  },
+const quickLinks = [
+  { title: "Continue practice", description: "Pick up your next coding session.", route: "/problems" },
+  { title: "Take a quiz", description: "Reinforce concepts with a quick attempt.", route: "/quiz" },
+  { title: "Review progress", description: "See what is complete and what comes next.", route: "/my-progress" },
 ];
 
 const formatTimestamp = (value) => {
@@ -42,9 +37,9 @@ const formatTimestamp = (value) => {
 
 export default function Home() {
   const navigate = useNavigate();
-  const shellContext = useOutletContext();
   const [profile, setProfile] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [results, setResults] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,11 +47,12 @@ export default function Home() {
 
   const loadDashboard = useCallback(async () => {
     try {
-        const [profileData, summaryData, resultsResponse, submissionData] = await Promise.all([
-          getMyProfile(),
-          getMyDashboardSummary(),
-          getMyResults(),
-          getMyRecentSubmissions(),
+      const [profileData, summaryData, analyticsResult, resultsResponse, submissionData] = await Promise.all([
+        getMyProfile(),
+        getMyDashboardSummary(),
+        getMyAnalytics().catch(() => null),
+        getMyResults(),
+        getMyRecentSubmissions(),
       ]);
 
       if (!summaryData?.onboardingCompleted) {
@@ -66,8 +62,22 @@ export default function Home() {
 
       setProfile(profileData);
       setSummary(summaryData);
+      setAnalytics(analyticsResult);
       setResults(Array.isArray(resultsResponse.data) ? resultsResponse.data : []);
       setSubmissions(Array.isArray(submissionData) ? submissionData : []);
+      trackProductEvent(
+        {
+          eventName: "DASHBOARD_VIEWED",
+          eventCategory: "ANALYTICS",
+          source: "WEB",
+          track: summaryData?.preferredTrack || "BOTH",
+          contentType: "DASHBOARD",
+          contentId: "user-home-dashboard",
+          contentTitle: "RankX Dashboard",
+          numericValue: summaryData?.streakCount || 0,
+        },
+        { oncePerSessionKey: "dashboard-viewed" }
+      );
       setError("");
     } catch (err) {
       if (err.response?.status === 401) {
@@ -95,14 +105,6 @@ export default function Home() {
     });
   }, [loadDashboard, navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
-        <p className="text-slate-300">Loading your dashboard...</p>
-      </div>
-    );
-  }
-
   const checklistOverrides = {
     "complete-profile": Boolean(summary?.onboardingCompleted),
     "solve-first-problem": submissions.length > 0,
@@ -111,261 +113,244 @@ export default function Home() {
     "join-study-path": Boolean(summary?.currentStudyPlan?.studyPlanId),
   };
 
+  const primaryRecommendation =
+    normalizeRecommendation(analytics?.primaryRecommendation) ||
+    normalizeRecommendation(summary?.recommendedFirstAction);
+
+  const recommendationCards = (analytics?.recommendations || summary?.recommendations || [])
+    .map(normalizeRecommendation)
+    .filter(Boolean)
+    .filter(
+      (recommendation, index, items) =>
+        items.findIndex(
+          (candidate) => candidate.title === recommendation.title && candidate.route === recommendation.route
+        ) === index
+    );
+
+  const activityFeed = useMemo(
+    () =>
+      [
+        ...results.slice(0, 3).map((result) => ({
+          id: `quiz-${result.attemptId}`,
+          label: result.quizTitle || `Quiz #${result.quizId}`,
+          meta: `${result.percentage}% correct`,
+          time: result.completedAt || result.submittedAt,
+          route: `/quiz/review/${result.attemptId}`,
+          type: "Quiz",
+        })),
+        ...submissions.slice(0, 3).map((submission) => ({
+          id: `submission-${submission.id}`,
+          label: `Problem #${submission.problemId}`,
+          meta: submission.status,
+          time: submission.createdAt,
+          route: `/submissions/${submission.id}`,
+          type: "Practice",
+        })),
+      ]
+        .sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0))
+        .slice(0, 5),
+    [results, submissions]
+  );
+
+  if (loading) {
+    return (
+      <LoadingState
+        title="Loading your dashboard"
+        description="Preparing your current plan, next step, and recent activity."
+      />
+    );
+  }
+
   return (
     <div className="app-container space-y-8">
-      <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
-        <header className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-8 shadow-2xl">
-          <p className="text-sm uppercase tracking-[0.25em] text-cyan-400">
-            RankX Dashboard
-          </p>
-          <h1 className="mt-4 text-4xl font-bold">
-            Welcome back{profile?.displayName ? `, ${profile.displayName}` : ""}
-          </h1>
-          <p className="mt-3 max-w-2xl text-slate-300">
-            Track coding and quiz progress from one place and jump back into
-            practice with a clear view of your recent work.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-300">
-            {summary?.goal ? (
-              <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1">
-                Goal: {summary.goal}
-              </span>
-            ) : null}
-            {summary?.preferredTrack ? (
-              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1">
-                Track: {summary.preferredTrack}
-              </span>
-            ) : null}
-            {summary?.skillLevel ? (
-              <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1">
-                Level: {summary.skillLevel}
-              </span>
-            ) : null}
-          </div>
-          {error ? (
-            <p className="mt-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-200">
-              {error}
-            </p>
-          ) : null}
-        </header>
+      <PageHeader
+        eyebrow="Dashboard"
+        title={`Welcome back${profile?.displayName ? `, ${profile.displayName}` : ""}`}
+        description="See your current direction, continue the right next step, and review recent progress without hunting through the app."
+        actions={
+          <button
+            type="button"
+            onClick={() =>
+              navigate(
+                summary?.currentStudyPlan?.studyPlanId
+                  ? `/study-plans/${summary.currentStudyPlan.studyPlanId}`
+                  : "/study-plans"
+              )
+            }
+            className="btn-primary"
+          >
+            {summary?.currentStudyPlan?.studyPlanId ? "Continue study plan" : "Choose a study plan"}
+          </button>
+        }
+      >
+        <div className="flex flex-wrap gap-2">
+          {summary?.goal ? <span className="badge-neutral">Goal: {summary.goal}</span> : null}
+          {summary?.preferredTrack ? <span className="badge-neutral">Track: {summary.preferredTrack}</span> : null}
+          {summary?.skillLevel ? <span className="badge-neutral">Level: {summary.skillLevel}</span> : null}
+        </div>
+      </PageHeader>
 
-        <aside className="space-y-4">
-          <div className="surface-card">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-400/12 text-lg font-semibold text-teal-200">
-                {(profile?.displayName || profile?.username || "User")
-                  .slice(0, 2)
-                  .toUpperCase()}
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-white">
-                  {profile?.displayName || profile?.username || "RankX User"}
-                </p>
-                <p className="text-sm text-slate-400">
-                  {shellContext?.profile?.email || "Workspace member"}
-                </p>
-              </div>
-            </div>
-            <div className="mt-6 grid gap-3">
-              <button onClick={() => navigate("/account")} className="btn-secondary w-full justify-start">
-                My account
-              </button>
-              <button onClick={() => navigate("/settings")} className="btn-secondary w-full justify-start">
-                Settings
-              </button>
-              <button onClick={() => navigate("/billing")} className="btn-secondary w-full justify-start">
-                Billing
-              </button>
-              <button onClick={() => navigate("/support")} className="btn-ghost w-full justify-start">
-                Help & support
-              </button>
-            </div>
-          </div>
+      {error ? <ErrorState title="Dashboard data is temporarily unavailable" message={error} /> : null}
 
-          <div className="surface-card">
-            <h2 className="section-title">Workspace status</h2>
-            <div className="mt-5 space-y-3">
-              {[
-                "Onboarding preferences now personalize your first recommended action.",
-                "Dashboard, profile, settings, billing, and support stay reachable from the main shell.",
-                "Core quiz and coding flows remain intact while activation becomes more product-guided.",
-              ].map((item) => (
-                <div key={item} className="surface-card-soft">
-                  <p className="text-sm leading-6 text-slate-300">{item}</p>
-                </div>
-              ))}
+      <section className="grid gap-4 md:grid-cols-3">
+        <StatCard
+          label="Current progress"
+          value={
+            summary?.currentStudyPlan?.completionPercentage != null
+              ? `${Number(summary.currentStudyPlan.completionPercentage).toFixed(0)}%`
+              : "0%"
+          }
+          detail={summary?.currentStudyPlan?.title || "No study plan selected yet"}
+          tone="cyan"
+        />
+        <StatCard
+          label="Next action"
+          value={summary?.currentStudyPlan?.nextItemTitle || primaryRecommendation?.title || "Choose your next session"}
+          detail="The clearest place to continue right now"
+          tone="emerald"
+        />
+        <StatCard
+          label="Streak"
+          value={summary?.streakCount ?? 0}
+          detail="Come back tomorrow to keep momentum alive"
+          tone="amber"
+        />
+      </section>
+
+      <RecommendedActionCard action={primaryRecommendation} />
+
+      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <PageSection
+          title="Continue from where you left off"
+          description="Your current plan and next recommended step should make the next click obvious."
+          action={
+            <button type="button" onClick={() => navigate("/study-plans")} className="btn-secondary">
+              View all plans
+            </button>
+          }
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="surface-card-soft">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Current plan</p>
+              <p className="mt-3 text-xl font-semibold text-white">
+                {summary?.currentStudyPlan?.title || "No study plan selected yet"}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                {summary?.currentStudyPlan?.nextItemTitle || "Choose a study plan to unlock a guided next step."}
+              </p>
+            </div>
+            <div className="surface-card-soft">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Recent activity</p>
+              <p className="mt-3 text-xl font-semibold text-white">
+                {analytics?.activitySummary?.latestOverallActivityAt
+                  ? formatTimestamp(analytics.activitySummary.latestOverallActivityAt)
+                  : "No tracked activity yet"}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Your dashboard updates as new quiz attempts and coding submissions are tracked.
+              </p>
             </div>
           </div>
-        </aside>
+        </PageSection>
+
+        <PageSection title="Quick links" description="Open the most useful next destinations without extra navigation.">
+          <div className="grid gap-3">
+            {quickLinks.map((item) => (
+              <button
+                key={item.title}
+                type="button"
+                onClick={() => navigate(item.route)}
+                className="surface-card-soft text-left transition hover:border-white/14 hover:bg-white/[0.06]"
+              >
+                <p className="text-base font-semibold text-white">{item.title}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">{item.description}</p>
+              </button>
+            ))}
+          </div>
+        </PageSection>
       </div>
 
-      <RecommendedActionCard action={summary?.recommendedFirstAction} />
-      <RecommendationCardsSection recommendations={summary?.recommendations || []} />
+      <DashboardChecklist items={summary?.checklist || []} overrides={checklistOverrides} />
 
-      <section className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <p className="text-sm text-slate-400">Current Plan</p>
-          <p className="mt-2 text-xl font-semibold text-white">
-            {summary?.currentStudyPlan?.title || "No active plan"}
-          </p>
-        </div>
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <p className="text-sm text-slate-400">Next Item</p>
-          <p className="mt-2 text-xl font-semibold text-white">
-            {summary?.currentStudyPlan?.nextItemTitle || "Choose a study plan"}
-          </p>
-        </div>
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <p className="text-sm text-slate-400">Completion</p>
-          <p className="mt-2 text-xl font-semibold text-white">
-            {summary?.currentStudyPlan?.completionPercentage != null
-              ? `${Number(summary.currentStudyPlan.completionPercentage).toFixed(0)}%`
-              : "0%"}
-          </p>
-        </div>
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <p className="text-sm text-slate-400">Streak Count</p>
-          <p className="mt-2 text-xl font-semibold text-white">
-            {summary?.streakCount ?? 0}
-          </p>
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <p className="text-sm text-slate-400">Role</p>
-          <p className="mt-2 text-2xl font-semibold">
-            {(profile?.role || "ROLE_USER").replace("ROLE_", "")}
-          </p>
-        </div>
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <p className="text-sm text-slate-400">Quiz Results</p>
-          <p className="mt-2 text-2xl font-semibold">{results.length}</p>
-        </div>
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <p className="text-sm text-slate-400">Recent Submissions</p>
-          <p className="mt-2 text-2xl font-semibold">{submissions.length}</p>
-        </div>
-      </section>
-
-      <DashboardChecklist
-        items={summary?.checklist || []}
-        overrides={checklistOverrides}
-      />
-
-      <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {practiceCards.map((card) => (
-          <motion.button
-            key={card.title}
-            whileHover={{ y: -4 }}
-            whileTap={{ scale: 0.99 }}
-            onClick={() => navigate(card.route)}
-            className={`rounded-3xl bg-gradient-to-r ${card.gradient} p-8 text-left shadow-xl`}
-          >
-            <h2 className="text-3xl font-semibold">{card.title}</h2>
-            <p className="mt-3 max-w-md text-white/85">{card.description}</p>
-          </motion.button>
-        ))}
-      </section>
-
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Recent Quiz Results</h2>
-            <button
-              onClick={() => navigate("/quiz/history")}
-              className="text-sm text-cyan-400 hover:text-cyan-300"
-            >
-              View all
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <PageSection
+          title="Recent activity"
+          description="See the last few things you completed so it is easy to continue or review."
+          action={
+            <button type="button" onClick={() => navigate("/submissions")} className="btn-ghost">
+              View history
             </button>
-          </div>
-          <div className="mt-5 space-y-3">
-            {results.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-slate-700 px-4 py-6 text-slate-400">
-                No quiz history yet. Start a quiz to populate this dashboard.
-              </p>
-            ) : (
-              results.slice(0, 5).map((result) => (
-                <div
-                  key={result.attemptId}
-                  onClick={() => navigate(`/quiz/review/${result.attemptId}`)}
-                  className="cursor-pointer rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-4 transition hover:bg-slate-900"
+          }
+        >
+          {activityFeed.length === 0 ? (
+            <EmptyState
+              title="No recent activity yet"
+              description="Start with one coding problem or one quiz attempt and your recent activity will appear here."
+            />
+          ) : (
+            <div className="space-y-3">
+              {activityFeed.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => navigate(item.route)}
+                  className="surface-card-soft flex w-full items-start justify-between gap-4 text-left transition hover:border-white/14 hover:bg-white/[0.06]"
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-slate-400">Quiz</p>
-                      <p className="font-medium">#{result.quizId}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-slate-400">Score</p>
-                      <p className="font-semibold">
-                        {result.score}/{result.totalQuestions}
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{item.type}</p>
+                    <p className="mt-2 text-sm font-medium text-white">{item.label}</p>
+                    <p className="mt-1 text-sm text-slate-400">{item.meta}</p>
+                  </div>
+                  <p className="text-xs text-slate-500">{formatTimestamp(item.time)}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </PageSection>
+
+        <PageSection title="Where to focus" description="Use these signals when you want a quick sense of what needs attention next.">
+          <div className="space-y-4">
+            <div className="surface-card-soft">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Coding weak topics</p>
+              {(analytics?.codingPerformance?.weakTopics || []).length ? (
+                <div className="mt-3 space-y-3">
+                  {analytics.codingPerformance.weakTopics.slice(0, 2).map((topic) => (
+                    <div key={topic.topic}>
+                      <p className="text-sm font-medium text-white">{topic.topic}</p>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {Number(topic.successRate || 0).toFixed(0)}% success across {topic.attempts} attempts
                       </p>
                     </div>
-                  </div>
-                  <p className="mt-3 text-sm text-slate-300">
-                    {result.percentage}% correct
-                  </p>
+                  ))}
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Recent Coding Submissions</h2>
-            <button
-              onClick={() => navigate("/submissions")}
-              className="text-sm text-emerald-400 hover:text-emerald-300"
-            >
-              View all
-            </button>
-          </div>
-          <div className="mt-5 space-y-3">
-            {submissions.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-slate-700 px-4 py-6 text-slate-400">
-                No submissions yet. Solve a coding problem to start building
-                history.
-              </p>
-            ) : (
-              submissions.map((submission) => (
-                <div
-                  key={submission.id}
-                  onClick={() => navigate(`/submissions/${submission.id}`)}
-                  className="cursor-pointer rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-4 transition hover:bg-slate-900"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-slate-400">Problem</p>
-                      <p className="font-medium">#{submission.problemId}</p>
+              ) : (
+                <p className="mt-3 text-sm text-slate-400">No coding weak topics detected yet.</p>
+              )}
+            </div>
+            <div className="surface-card-soft">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Quiz weak topics</p>
+              {(analytics?.quizPerformance?.weakTopics || []).length ? (
+                <div className="mt-3 space-y-3">
+                  {analytics.quizPerformance.weakTopics.slice(0, 2).map((topic) => (
+                    <div key={topic.topic}>
+                      <p className="text-sm font-medium text-white">{topic.topic}</p>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {Number(topic.successRate || 0).toFixed(0)}% success across {topic.attempts} attempts
+                      </p>
                     </div>
-                    <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-200">
-                      {submission.status}
-                    </span>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-300">
-                    <span>{submission.languageKey}</span>
-                    <span>
-                      {submission.runtimeMs != null
-                        ? `${submission.runtimeMs} ms`
-                        : "Runtime pending"}
-                    </span>
-                    <span>
-                      {submission.memoryKb != null
-                        ? `${submission.memoryKb} KB`
-                        : "Memory pending"}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-xs text-slate-500">
-                    {formatTimestamp(submission.createdAt)}
-                  </p>
+                  ))}
                 </div>
-              ))
-            )}
+              ) : (
+                <p className="mt-3 text-sm text-slate-400">No quiz weak topics detected yet.</p>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </PageSection>
+      </div>
+
+      {recommendationCards.length > 0 ? (
+        <RecommendationCardsSection recommendations={recommendationCards} />
+      ) : null}
     </div>
   );
 }

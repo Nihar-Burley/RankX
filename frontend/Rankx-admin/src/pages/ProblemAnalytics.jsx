@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getProblemAnalytics } from "../services/adminAnalyticsApi";
+import { trackAdminEvent } from "../utils/eventTracker";
 
 function AnalyticsLayout({ title, description, data, loading, error }) {
   if (loading) {
@@ -71,6 +72,13 @@ function AnalyticsLayout({ title, description, data, loading, error }) {
         </div>
       </section>
 
+      <section className="surface-card-soft">
+        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">How to use this view</p>
+        <p className="mt-3 text-sm leading-6 text-slate-300">
+          High-attempt, low-acceptance content may need copy, constraints, or difficulty tuning. Low-attempt content may need better placement or a clearer learning role inside study plans.
+        </p>
+      </section>
+
       <section className="surface-card">
         <div className="table-shell overflow-x-auto">
           <table className="min-w-full">
@@ -114,7 +122,21 @@ export default function ProblemAnalytics() {
   useEffect(() => {
     const load = async () => {
       try {
-        setData(await getProblemAnalytics());
+        const response = await getProblemAnalytics();
+        setData(response);
+        trackAdminEvent(
+          {
+            eventName: "ADMIN_ANALYTICS_PROBLEMS_VIEWED",
+            eventCategory: "ANALYTICS",
+            source: "WEB",
+            track: "ADMIN",
+            contentType: "PROBLEM_ANALYTICS",
+            contentId: "admin-problem-analytics",
+            contentTitle: "Problem Analytics",
+            numericValue: response?.totalTrackedItems || 0,
+          },
+          { oncePerSessionKey: "admin-problem-analytics-viewed" }
+        );
       } catch (err) {
         setError(err.response?.data?.message || "We could not load problem analytics.");
       } finally {

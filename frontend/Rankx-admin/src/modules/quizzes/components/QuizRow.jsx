@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { FaEdit, FaEye, FaListUl, FaToggleOff, FaToggleOn } from "react-icons/fa";
 
 const statusStyles = {
@@ -21,8 +20,7 @@ const QuizRow = ({
   const isPublished = quiz.status === "PUBLISHED";
 
   return (
-    <motion.article
-      whileHover={{ y: -2 }}
+    <article
       className={`rounded-[24px] border p-5 shadow-[0_16px_40px_rgba(2,8,23,0.18)] transition ${
         selected
           ? "border-sky-300/25 bg-sky-400/8"
@@ -96,7 +94,7 @@ const QuizRow = ({
           </button>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 };
 

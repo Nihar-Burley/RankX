@@ -7,39 +7,24 @@ import {
   FaChevronDown,
   FaClipboardList,
   FaCog,
-  FaCreditCard,
-  FaHeadset,
   FaLayerGroup,
+  FaQuestionCircle,
   FaSignOutAlt,
   FaTimes,
   FaUsers,
 } from "react-icons/fa";
 import { logoutUser } from "../services/authService";
 
-const navigationGroups = [
-  {
-    label: "Overview",
-    items: [
-      { label: "Dashboard overview", to: "/admin/dashboard", icon: FaChartBar },
-      { label: "KPI dashboard", to: "/admin/analytics/kpis", icon: FaChartLine },
-      { label: "Problem analytics", to: "/admin/analytics/problems", icon: FaChartLine },
-      { label: "Quiz analytics", to: "/admin/analytics/quizzes", icon: FaChartLine },
-      { label: "Question analytics", to: "/admin/analytics/questions", icon: FaChartLine },
-      { label: "Quiz management", to: "/quizzes", icon: FaClipboardList },
-      { label: "Create quiz", to: "/quizzes/create", icon: FaLayerGroup },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { label: "Users management", to: "/admin/users", icon: FaUsers },
-      { label: "Plans & subscriptions", to: "/admin/plans", icon: FaLayerGroup },
-      { label: "Payments & billing", to: "/admin/payments", icon: FaCreditCard },
-      { label: "Reports & analytics", to: "/admin/reports", icon: FaChartBar },
-      { label: "Support & tickets", to: "/admin/support", icon: FaHeadset },
-      { label: "Settings", to: "/admin/settings", icon: FaCog },
-    ],
-  },
+const navigationItems = [
+  { label: "Admin Dashboard", to: "/admin/dashboard", icon: FaChartBar },
+  { label: "Users", to: "/admin/users", icon: FaUsers },
+  { label: "Problems", to: "/admin/analytics/problems", icon: FaChartLine },
+  { label: "Quizzes", to: "/quizzes", icon: FaClipboardList },
+  { label: "Questions", to: "/admin/analytics/questions", icon: FaQuestionCircle },
+  { label: "Study Plans", to: "/admin/plans", icon: FaLayerGroup },
+  { label: "Analytics", to: "/admin/analytics/quizzes", icon: FaChartLine },
+  { label: "KPIs", to: "/admin/analytics/kpis", icon: FaChartBar },
+  { label: "Settings", to: "/admin/settings", icon: FaCog },
 ];
 
 const navLinkBase =
@@ -75,6 +60,11 @@ export default function AdminShell() {
     [adminName]
   );
 
+  const activeNav = useMemo(
+    () => navigationItems.find((item) => location.pathname.startsWith(item.to)) || navigationItems[0],
+    [location.pathname]
+  );
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
@@ -85,67 +75,61 @@ export default function AdminShell() {
     }
   }, [navigate]);
 
-  useEffect(() => {
-    setMobileNavOpen(false);
-    setProfileMenuOpen(false);
-  }, [location.pathname]);
-
   const handleLogout = () => {
     logoutUser();
     navigate("/login", { replace: true });
   };
 
-  const renderNavigation = () => (
-    <div className="space-y-8">
-      {navigationGroups.map((group) => (
-        <div key={group.label}>
-          <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            {group.label}
-          </p>
-          <div className="space-y-1">
-            {group.items.map((item) => {
-              const Icon = item.icon;
+  const handleNavigate = () => {
+    setMobileNavOpen(false);
+    setProfileMenuOpen(false);
+  };
 
-              return (
-                <NavLink key={item.to} to={item.to} className={getNavLinkClass}>
-                  <Icon className="text-sm text-slate-500 transition group-hover:text-slate-300" />
-                  <span>{item.label}</span>
-                </NavLink>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+  const renderNavigation = () => (
+    <div className="space-y-1">
+      {navigationItems.map((item) => {
+        const Icon = item.icon;
+
+        return (
+          <NavLink key={item.to} to={item.to} className={getNavLinkClass} onClick={handleNavigate}>
+            <Icon className="text-sm text-slate-500 transition group-hover:text-slate-300" />
+            <span>{item.label}</span>
+          </NavLink>
+        );
+      })}
     </div>
   );
 
   return (
     <div className="min-h-screen bg-transparent">
       <div className="flex min-h-screen">
-        <aside className="hidden w-80 flex-col border-r border-white/10 bg-slate-950/70 px-5 py-6 backdrop-blur-xl lg:flex">
+        <aside className="hidden w-72 flex-col border-r border-white/10 bg-slate-950/78 px-5 py-6 backdrop-blur-xl lg:flex">
           <div className="mb-8">
             <div className="badge-neutral">RankX Admin</div>
-            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white">
-              Management console
-            </h1>
+            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white">Management console</h1>
             <p className="mt-2 text-sm leading-6 text-slate-400">
-              Operate content, billing, support, and platform management from one
-              complete control surface.
+              One place to monitor platform health, manage learning content, and take action quickly.
             </p>
           </div>
 
-          {renderNavigation()}
+          <div>
+            <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              Main
+            </p>
+            {renderNavigation()}
+          </div>
 
           <div className="mt-auto space-y-3 pt-6">
             <div className="surface-card-soft">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                Signed in as
-              </p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Control lane</p>
               <p className="mt-2 text-sm font-medium text-white">{adminName}</p>
               <p className="mt-1 text-xs text-slate-400">Administrative access</p>
+              <p className="mt-3 text-xs leading-5 text-slate-500">
+                Prioritize content quality, study plans, and KPI trends first.
+              </p>
             </div>
 
-            <button onClick={handleLogout} className="btn-secondary w-full justify-start">
+            <button type="button" onClick={handleLogout} className="btn-secondary w-full justify-start">
               <FaSignOutAlt />
               Logout
             </button>
@@ -153,7 +137,7 @@ export default function AdminShell() {
         </aside>
 
         <div className="flex min-h-screen flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/70 px-4 py-3 backdrop-blur-xl sm:px-6">
+          <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/76 px-4 py-3 backdrop-blur-xl sm:px-6">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <button
@@ -167,11 +151,9 @@ export default function AdminShell() {
 
                 <div>
                   <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
-                    Platform Control
+                    Admin / {activeNav.label}
                   </p>
-                  <p className="text-sm font-medium text-white">
-                    Administrative workflows and management actions
-                  </p>
+                  <p className="text-sm font-medium text-white">Administrative workflows and management actions</p>
                 </div>
               </div>
 
@@ -198,13 +180,9 @@ export default function AdminShell() {
                     role="menu"
                     className="absolute right-0 mt-3 w-64 rounded-3xl border border-white/10 bg-slate-950/96 p-2 shadow-[0_24px_60px_rgba(2,8,23,0.42)] backdrop-blur-xl"
                   >
-                    <NavLink to="/admin/settings" className={getNavLinkClass} role="menuitem">
+                    <NavLink to="/admin/settings" className={getNavLinkClass} role="menuitem" onClick={handleNavigate}>
                       <FaCog className="text-sm text-slate-500" />
                       <span>Settings</span>
-                    </NavLink>
-                    <NavLink to="/admin/support" className={getNavLinkClass} role="menuitem">
-                      <FaHeadset className="text-sm text-slate-500" />
-                      <span>Support & tickets</span>
                     </NavLink>
                     <button
                       type="button"
@@ -251,10 +229,15 @@ export default function AdminShell() {
               </button>
             </div>
 
-            <div className="overflow-y-auto">{renderNavigation()}</div>
+            <div className="overflow-y-auto">
+              <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                Main
+              </p>
+              {renderNavigation()}
+            </div>
 
             <div className="mt-auto pt-6">
-              <button onClick={handleLogout} className="btn-secondary w-full justify-start">
+              <button type="button" onClick={handleLogout} className="btn-secondary w-full justify-start">
                 <FaSignOutAlt />
                 Logout
               </button>

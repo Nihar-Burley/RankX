@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -53,6 +55,7 @@ public class UserAnalyticsService {
                 .codingPerformance(coding)
                 .quizPerformance(quiz)
                 .activitySummary(activity)
+                .primaryRecommendation(recommendations.isEmpty() ? null : recommendations.getFirst())
                 .recommendations(recommendations)
                 .build();
     }
@@ -144,8 +147,18 @@ public class UserAnalyticsService {
             UUID userId
     ) {
         ProgressSummaryResponse progressSummary = studyPlanService.getProgressSummary(userId);
+        long totalCompletedPlanItems = studyPlanService.countCompletedItems(userId);
         LocalDateTime latestCoding = submissions.stream()
                 .map(SubmissionAnalyticsView::getCreatedAt)
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+        LocalDateTime latestQuiz = results.stream()
+                .map(ResultAnalyticsView::getEvaluatedAt)
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+        LocalDateTime latestOverall = Stream.of(latestCoding, latestQuiz)
                 .filter(Objects::nonNull)
                 .max(LocalDateTime::compareTo)
                 .orElse(null);
@@ -154,9 +167,11 @@ public class UserAnalyticsService {
                 .totalCodingActivities(submissions.size())
                 .totalQuizActivities(results.size())
                 .enrolledStudyPlans(progressSummary.getEnrolledPlans())
+                .totalCompletedPlanItems(totalCompletedPlanItems)
                 .streakCount(progressSummary.getStreakCount())
                 .latestCodingActivityAt(latestCoding)
-                .latestQuizActivityAt(null)
+                .latestQuizActivityAt(latestQuiz)
+                .latestOverallActivityAt(latestOverall)
                 .build();
     }
 
@@ -169,81 +184,71 @@ public class UserAnalyticsService {
     ) {
         var preferences = userPreferenceService.getPreferences(userId);
         ProgressSummaryResponse progressSummary = studyPlanService.getProgressSummary(userId);
+        StudyPlanService.StudyPlanNextItemView nextPlanItem = studyPlanService.getCurrentNextItem(userId);
         List<RecommendationCardResponse> recommendations = new ArrayList<>();
 
-        if (activity.getEnrolledStudyPlans() == 0) {
-            recommendations.add(RecommendationCardResponse.builder()
-                    .title("Join a study plan")
-                    .description("Structured plans unlock guided practice and clearer daily progress.")
-                    .route("/study-plans")
-                    .reason("No active plan yet")
-                    .priority("HIGH")
-                    .build());
+        if (!preferences.isOnboardingCompleted()) {
+            recommendations.add(recommendation(
+                    "Complete onboarding",
+                    "Tell RankX about your goal and preferred track so your dashboard can personalize what comes next.",
+                    "/onboarding",
+                    "Preferences are not set yet",
+                    "HIGH",
+                    "ONBOARDING"
+            ));
         }
 
-        if (progressSummary.getCurrentPlan() != null && progressSummary.getCurrentPlan().getNextItemTitle() != null) {
-            recommendations.add(RecommendationCardResponse.builder()
-                    .title("Continue your current plan")
-                    .description("Pick up with " + progressSummary.getCurrentPlan().getNextItemTitle() + " and keep your momentum.")
-                    .route("/my-progress")
-                    .reason("Active study plan detected")
-                    .priority("HIGH")
-                    .build());
+        if (nextPlanItem != null) {
+            recommendations.add(recommendation(
+                    "Continue " + nextPlanItem.studyPlanTitle(),
+                    "Your next best step is " + nextPlanItem.itemTitle() + ". Finishing it keeps your guided path moving forward.",
+                    "/my-progress",
+                    "Unfinished study plan item is available right now",
+                    "HIGH",
+                    "STUDY_PLAN_NEXT_ITEM"
+            ));
+        } else if (activity.getEnrolledStudyPlans() == 0) {
+            recommendations.add(recommendation(
+                    "Join a study plan",
+                    "Structured plans unlock guided practice and clearer daily progress.",
+                    "/study-plans",
+                    "No active plan yet",
+                    "HIGH",
+                    "STUDY_PLAN_ENROLL"
+            ));
         }
 
-        if ("Coding".equalsIgnoreCase(preferences.getPreferredTrack()) || "Both".equalsIgnoreCase(preferences.getPreferredTrack())) {
-            TopicInsightResponse weakCodingTopic = coding.getWeakTopics().stream().findFirst().orElse(null);
-            if (weakCodingTopic != null) {
-                recommendations.add(RecommendationCardResponse.builder()
-                        .title("Strengthen " + weakCodingTopic.getTopic())
-                        .description("Your coding acceptance rate is lowest here. Revisit this topic with one focused problem.")
-                        .route("/problems")
-                        .reason("Weak coding topic")
-                        .priority("MEDIUM")
-                        .build());
-            } else {
-                recommendations.add(RecommendationCardResponse.builder()
-                        .title("Solve a coding problem")
-                        .description("Build consistency by completing one problem today.")
-                        .route("/problems")
-                        .reason("Coding track preference")
-                        .priority("MEDIUM")
-                        .build());
-            }
+        RecommendationCardResponse inactivityRecommendation = buildInactivityRecommendation(activity);
+        if (inactivityRecommendation != null) {
+            recommendations.add(inactivityRecommendation);
         }
 
-        if ("Quiz".equalsIgnoreCase(preferences.getPreferredTrack()) || "Both".equalsIgnoreCase(preferences.getPreferredTrack())) {
-            TopicInsightResponse weakQuizTopic = quiz.getWeakTopics().stream().findFirst().orElse(null);
-            if (weakQuizTopic != null) {
-                recommendations.add(RecommendationCardResponse.builder()
-                        .title("Review " + weakQuizTopic.getTopic())
-                        .description("Your quiz performance is weaker in this area. Take another focused quiz attempt.")
-                        .route("/quiz")
-                        .reason("Weak quiz topic")
-                        .priority("MEDIUM")
-                        .build());
-            } else {
-                recommendations.add(RecommendationCardResponse.builder()
-                        .title("Attempt a quiz")
-                        .description("Keep recall fresh with a short quiz session.")
-                        .route("/quiz")
-                        .reason("Quiz track preference")
-                        .priority("LOW")
-                        .build());
-            }
+        RecommendationCardResponse repeatedFailureRecommendation = buildRepeatedFailureRecommendation(preferences, coding, quiz);
+        if (repeatedFailureRecommendation != null) {
+            recommendations.add(repeatedFailureRecommendation);
+        }
+
+        RecommendationCardResponse difficultyRecommendation = buildDifficultyRecommendation(preferences, coding, quiz, progressSummary, nextPlanItem);
+        if (difficultyRecommendation != null) {
+            recommendations.add(difficultyRecommendation);
         }
 
         if (recommendations.isEmpty()) {
-            recommendations.add(RecommendationCardResponse.builder()
-                    .title("Open your dashboard")
-                    .description("You are in a healthy learning state. Continue your next best activity.")
-                    .route("/home")
-                    .reason("Balanced activity")
-                    .priority("LOW")
-                    .build());
+            recommendations.add(recommendation(
+                    "Start your next learning session",
+                    "You have a clean slate. Choose one focused activity and build momentum from there.",
+                    "/home",
+                    "No preferences or activity yet",
+                    "LOW",
+                    "DEFAULT_FALLBACK"
+            ));
         }
 
-        return recommendations.stream().limit(3).toList();
+        return recommendations.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .limit(3)
+                .toList();
     }
 
     private List<TopicInsightResponse> buildCodingTopics(List<SubmissionAnalyticsView> submissions) {
@@ -357,6 +362,135 @@ public class UserAnalyticsService {
 
     private double round(double value) {
         return Math.round(value * 100.0) / 100.0;
+    }
+
+    private RecommendationCardResponse buildInactivityRecommendation(ActivityAnalyticsResponse activity) {
+        if (activity.getLatestOverallActivityAt() == null) {
+            return null;
+        }
+
+        long inactiveDays = ChronoUnit.DAYS.between(activity.getLatestOverallActivityAt(), LocalDateTime.now());
+        if (inactiveDays < 3) {
+            return null;
+        }
+
+        return recommendation(
+                inactiveDays >= 7 ? "Restart your streak" : "Get back into practice",
+                inactiveDays >= 7
+                        ? "It has been " + inactiveDays + " days since your last session. A quick focused round will restart momentum."
+                        : "You have been away for " + inactiveDays + " days. A short practice session will keep your learning warm.",
+                "/home",
+                "Inactivity detected across coding and quiz activity",
+                "HIGH",
+                "INACTIVITY"
+        );
+    }
+
+    private RecommendationCardResponse buildRepeatedFailureRecommendation(
+            com.application.userservice.dto.UserPreferenceResponse preferences,
+            CodingAnalyticsResponse coding,
+            QuizAnalyticsResponse quiz
+    ) {
+        TopicInsightResponse weakCodingTopic = coding.getWeakTopics().stream()
+                .filter(topic -> topic.getAttempts() >= 2)
+                .findFirst()
+                .orElse(null);
+        TopicInsightResponse weakQuizTopic = quiz.getWeakTopics().stream()
+                .filter(topic -> topic.getAttempts() >= 2)
+                .findFirst()
+                .orElse(null);
+
+        boolean codingPreferred = "Coding".equalsIgnoreCase(preferences.getPreferredTrack())
+                || "Both".equalsIgnoreCase(preferences.getPreferredTrack());
+        boolean quizPreferred = "Quiz".equalsIgnoreCase(preferences.getPreferredTrack())
+                || "Both".equalsIgnoreCase(preferences.getPreferredTrack());
+
+        if (codingPreferred && weakCodingTopic != null) {
+            return recommendation(
+                    "Strengthen " + weakCodingTopic.getTopic(),
+                    "You have struggled on this coding topic multiple times. Revisit it with one simpler problem before moving on.",
+                    "/submissions",
+                    "Repeated low acceptance in " + weakCodingTopic.getTopic(),
+                    "MEDIUM",
+                    "REPEATED_TOPIC_FAILURE"
+            );
+        }
+
+        if (quizPreferred && weakQuizTopic != null) {
+            return recommendation(
+                    "Review " + weakQuizTopic.getTopic(),
+                    "This quiz topic is still costing points. A focused revision attempt can close the gap quickly.",
+                    "/quiz/history",
+                    "Repeated low quiz performance in " + weakQuizTopic.getTopic(),
+                    "MEDIUM",
+                    "REPEATED_TOPIC_FAILURE"
+            );
+        }
+
+        return null;
+    }
+
+    private RecommendationCardResponse buildDifficultyRecommendation(
+            com.application.userservice.dto.UserPreferenceResponse preferences,
+            CodingAnalyticsResponse coding,
+            QuizAnalyticsResponse quiz,
+            ProgressSummaryResponse progressSummary,
+            StudyPlanService.StudyPlanNextItemView nextPlanItem
+    ) {
+        String targetLevel = determineNextDifficulty(preferences.getSkillLevel(), coding.getAcceptanceRate(), quiz.getAveragePercentage());
+
+        if (nextPlanItem != null && nextPlanItem.level() != null && nextPlanItem.level().equalsIgnoreCase(targetLevel)) {
+            return recommendation(
+                    "Step into " + targetLevel + " practice",
+                    "Your next plan item already matches the next useful difficulty step for your current performance.",
+                    "/my-progress",
+                    "Difficulty progression aligns with your active plan",
+                    "MEDIUM",
+                    "DIFFICULTY_PROGRESSION"
+            );
+        }
+
+        if (progressSummary.getCurrentPlan() != null) {
+            return recommendation(
+                    "Progress into " + targetLevel + " work",
+                    "Your recent performance suggests you are ready for " + targetLevel.toLowerCase() + " level practice next.",
+                    "/study-plans",
+                    "Difficulty progression based on recent performance",
+                    "LOW",
+                    "DIFFICULTY_PROGRESSION"
+            );
+        }
+
+        return null;
+    }
+
+    private String determineNextDifficulty(String skillLevel, double codingAcceptanceRate, double quizAveragePercentage) {
+        double blendedScore = Math.max(codingAcceptanceRate, quizAveragePercentage);
+        if ("Beginner".equalsIgnoreCase(skillLevel) && blendedScore >= 70.0) {
+            return "Intermediate";
+        }
+        if ("Intermediate".equalsIgnoreCase(skillLevel) && blendedScore >= 78.0) {
+            return "Advanced";
+        }
+        return skillLevel == null || skillLevel.isBlank() ? "Beginner" : skillLevel;
+    }
+
+    private RecommendationCardResponse recommendation(
+            String title,
+            String description,
+            String route,
+            String reason,
+            String priority,
+            String type
+    ) {
+        return RecommendationCardResponse.builder()
+                .title(title)
+                .description(description)
+                .route(route)
+                .reason(reason)
+                .priority(priority)
+                .recommendationType(type)
+                .build();
     }
 
     private static final class TopicAccumulator {

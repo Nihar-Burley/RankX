@@ -25,6 +25,21 @@ export const getMyAnalytics = async () => {
   return extractApiData(response);
 };
 
+export const normalizeRecommendation = (recommendation) => {
+  if (!recommendation) {
+    return null;
+  }
+
+  return {
+    title: recommendation.title || "Next action",
+    description: recommendation.description || "Continue your next best step in RankX.",
+    route: recommendation.route || "/home",
+    reason: recommendation.reason || "Personalized from your current activity",
+    priority: recommendation.priority || "LOW",
+    recommendationType: recommendation.recommendationType || "GENERAL",
+  };
+};
+
 export const getStudyPlans = async () => {
   const response = await api.get("/users/study-plans");
   return extractApiData(response);

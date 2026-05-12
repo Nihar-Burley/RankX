@@ -1,16 +1,3 @@
-import { motion } from "framer-motion";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 32 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const stagger = {
-  visible: {
-    transition: { staggerChildren: 0.1 },
-  },
-};
-
 export default function LandingPage() {
   return (
     <div className="overflow-x-hidden bg-[#060d18] text-white">
@@ -43,13 +30,7 @@ export default function LandingPage() {
 
       <section className="relative px-5 py-20 sm:px-6 sm:py-28">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(94,234,212,0.18),_transparent_28%),radial-gradient(circle_at_85%_10%,_rgba(124,156,255,0.12),_transparent_22%)]" />
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          transition={{ duration: 0.75 }}
-          className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center"
-        >
+        <div className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
             <div className="badge-neutral">Modern interview prep workspace</div>
             <h1 className="mt-6 max-w-4xl text-5xl font-semibold tracking-tight text-white sm:text-6xl">
@@ -73,10 +54,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <motion.div
-            whileHover={{ y: -4 }}
-            className="surface-card overflow-hidden rounded-[32px] p-0"
-          >
+          <div className="surface-card overflow-hidden rounded-[32px] p-0">
             <div className="border-b border-white/10 px-5 py-4">
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-rose-400/80" />
@@ -105,8 +83,8 @@ Ready to submit`}
                 </pre>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </section>
 
       <section id="features" className="border-y border-white/10 bg-slate-950/50 px-5 py-16 sm:px-6">
@@ -128,24 +106,18 @@ Ready to submit`}
         <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           Practice loops designed for momentum
         </h2>
-        <motion.div
-          variants={stagger}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="mt-10 grid gap-6 md:grid-cols-3"
-        >
+        <div className="mt-10 grid gap-6 md:grid-cols-3">
           {[
             "Daily coding sets",
             "Timed quiz sessions",
             "Submission review and iteration",
           ].map((item) => (
-            <motion.div key={item} variants={fadeUp} className="surface-card">
+            <div key={item} className="surface-card">
               <p className="badge-neutral">Workflow</p>
               <h3 className="mt-4 text-xl font-semibold text-white">{item}</h3>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </section>
 
       <section id="paths" className="border-t border-white/10 px-5 py-20 sm:px-6">

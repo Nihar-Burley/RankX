@@ -14,4 +14,13 @@ public interface StudyPlanRepository extends JpaRepository<StudyPlan, Long> {
 
     @EntityGraph(attributePaths = "items")
     Optional<StudyPlan> findByIdAndActiveTrue(Long id);
+
+    @EntityGraph(attributePaths = "items")
+    List<StudyPlan> findAllByOrderByUpdatedAtDesc();
+
+    @EntityGraph(attributePaths = "items")
+    Optional<StudyPlan> findBySlugIgnoreCase(String slug);
+
+    @EntityGraph(attributePaths = "items")
+    Optional<StudyPlan> findStudyPlanById(Long id);
 }

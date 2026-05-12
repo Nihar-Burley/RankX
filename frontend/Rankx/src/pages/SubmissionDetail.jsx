@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProblemAttemptSummary, getSubmissionDetail } from "../services/submissionApi";
+import { trackProductEvent } from "../utils/eventTracker";
 
 const formatTimestamp = (value) => {
   if (!value) {
@@ -34,11 +35,24 @@ export default function SubmissionDetail() {
       try {
         const data = await getSubmissionDetail(submissionId);
         setSubmission(data);
+        trackProductEvent(
+          {
+            eventName: "CODING_SUBMISSION_DETAIL_VIEWED",
+            eventCategory: "CODING",
+            source: "WEB",
+            track: "CODING",
+            contentType: "SUBMISSION",
+            contentId: `submission-${submissionId}`,
+            contentTitle: `Submission ${submissionId}`,
+            parentContentId: data?.problemId ? `problem-${data.problemId}` : undefined,
+          },
+          { oncePerSessionKey: `submission-detail-${submissionId}` }
+        );
         setError("");
         try {
           const summary = await getProblemAttemptSummary(data.problemId);
           setProblemSummary(summary);
-        } catch (summaryError) {
+        } catch {
           setProblemSummary(null);
         }
       } catch (err) {
@@ -63,7 +77,7 @@ export default function SubmissionDetail() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-emerald-400">
-              Submission Detail
+              Coding Review
             </p>
             <h1 className="mt-3 text-4xl font-bold">
               Submission #{submissionId}
@@ -90,7 +104,7 @@ export default function SubmissionDetail() {
             <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
                 <p className="text-sm text-slate-400">Problem</p>
-                <p className="mt-2 text-2xl font-semibold">#{submission.problemId}</p>
+                <p className="mt-2 text-2xl font-semibold">Problem #{submission.problemId}</p>
               </div>
               <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
                 <p className="text-sm text-slate-400">Language</p>
@@ -120,6 +134,9 @@ export default function SubmissionDetail() {
                   Submitted {formatTimestamp(submission.createdAt)}
                 </p>
               </div>
+              <p className="mt-4 text-sm leading-6 text-slate-400">
+                Review this submission alongside your broader problem attempt history to see whether you are converging toward stable accepted outcomes.
+              </p>
             </section>
 
             {problemSummary ? (

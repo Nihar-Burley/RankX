@@ -146,4 +146,50 @@ class UserPreferenceServiceTest {
         assertThat(response.getRecommendedFirstAction().getTitle()).contains("coding");
         assertThat(response.getChecklist().getFirst().isCompleted()).isTrue();
     }
+
+    @Test
+    void shouldPreferQuizActionForCollegeExamUsersOnBothTrack() {
+        UserPreference preference = UserPreference.builder()
+                .id(5L)
+                .userId(USER_ID)
+                .goal("College/Exam Practice")
+                .preferredTrack("Both")
+                .skillLevel("Beginner")
+                .onboardingCompleted(true)
+                .build();
+
+        when(userPreferenceRepository.findByUserId(USER_ID)).thenReturn(Optional.of(preference));
+
+        DashboardSummaryResponse response = userPreferenceService.getDashboardSummary(
+                USER_ID,
+                "ROLE_USER",
+                "User Demo"
+        );
+
+        assertThat(response.getRecommendedFirstAction().getRoute()).isEqualTo("/quiz");
+        assertThat(response.getRecommendedFirstAction().getTitle()).containsIgnoringCase("quiz");
+    }
+
+    @Test
+    void shouldFallbackToDashboardForUnexpectedTrackValues() {
+        UserPreference preference = UserPreference.builder()
+                .id(6L)
+                .userId(USER_ID)
+                .goal("Skill Improvement")
+                .preferredTrack("SomethingElse")
+                .skillLevel("Intermediate")
+                .onboardingCompleted(true)
+                .build();
+
+        when(userPreferenceRepository.findByUserId(USER_ID)).thenReturn(Optional.of(preference));
+
+        DashboardSummaryResponse response = userPreferenceService.getDashboardSummary(
+                USER_ID,
+                "ROLE_USER",
+                "User Demo"
+        );
+
+        assertThat(response.getRecommendedFirstAction().getRoute()).isEqualTo("/home");
+        assertThat(response.getRecommendedFirstAction().getTitle()).isEqualTo("Explore your dashboard");
+    }
 }

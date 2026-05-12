@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   FaChartLine,
   FaClipboardList,
@@ -117,7 +116,7 @@ const Dashboard = () => {
             const Icon = stat.icon;
 
             return (
-              <motion.div key={stat.title} whileHover={{ y: -3 }} className="stat-card">
+              <div key={stat.title} className="stat-card">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm text-slate-400">{stat.title}</p>
@@ -128,7 +127,7 @@ const Dashboard = () => {
                     <Icon />
                   </span>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </section>

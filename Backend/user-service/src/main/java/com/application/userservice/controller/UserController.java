@@ -1,5 +1,7 @@
 package com.application.userservice.controller;
 
+import com.application.userservice.dto.AdminStudyPlanRequest;
+import com.application.userservice.dto.AdminStudyPlanResponse;
 import com.application.userservice.dto.DashboardSummaryResponse;
 import com.application.userservice.dto.ProductEventRequest;
 import com.application.userservice.dto.ProductEventResponse;
@@ -154,6 +156,41 @@ public class UserController {
     @GetMapping("/me/progress-summary")
     public ResponseEntity<ProgressSummaryResponse> getMyProgressSummary(Authentication authentication) {
         return ResponseEntity.ok(studyPlanService.getProgressSummary(getUserId(authentication)));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/study-plans")
+    public ResponseEntity<List<AdminStudyPlanResponse>> getAdminStudyPlans() {
+        return ResponseEntity.ok(studyPlanService.getAdminStudyPlans());
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/study-plans/{id}")
+    public ResponseEntity<AdminStudyPlanResponse> getAdminStudyPlan(@PathVariable Long id) {
+        return ResponseEntity.ok(studyPlanService.getAdminStudyPlan(id));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/admin/study-plans")
+    public ResponseEntity<AdminStudyPlanResponse> createAdminStudyPlan(
+            @Valid @RequestBody AdminStudyPlanRequest request
+    ) {
+        return ResponseEntity.ok(studyPlanService.createStudyPlan(request));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/admin/study-plans/{id}")
+    public ResponseEntity<AdminStudyPlanResponse> updateAdminStudyPlan(
+            @PathVariable Long id,
+            @Valid @RequestBody AdminStudyPlanRequest request
+    ) {
+        return ResponseEntity.ok(studyPlanService.updateStudyPlan(id, request));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/admin/study-plans/{id}/deactivate")
+    public ResponseEntity<AdminStudyPlanResponse> deactivateAdminStudyPlan(@PathVariable Long id) {
+        return ResponseEntity.ok(studyPlanService.deactivateStudyPlan(id));
     }
 
     private UUID getUserId(Authentication authentication) {

@@ -3,6 +3,7 @@ package com.application.resultservice.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -14,4 +15,5 @@ public class ResultResponse {
     private Integer score;
     private Integer totalQuestions;
     private Double percentage;
+    private LocalDateTime evaluatedAt;
 }
