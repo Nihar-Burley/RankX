@@ -1,5 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import Badge from "./ui/Badge";
+
+const priorityTone = {
+  HIGH: "bg-rose-400/10 text-rose-300",
+  MEDIUM: "bg-amber-400/10 text-amber-300",
+  LOW: "bg-cyan-400/10 text-cyan-300",
+};
 
 export default function RecommendationCardsSection({ recommendations = [] }) {
   const navigate = useNavigate();
@@ -28,26 +33,21 @@ export default function RecommendationCardsSection({ recommendations = [] }) {
           >
             <div className="flex items-start justify-between gap-4">
               <p className="text-lg font-semibold text-white">{recommendation.title}</p>
-              <Badge
-                tone={
-                  recommendation.priority === "HIGH"
-                    ? "danger"
-                    : recommendation.priority === "MEDIUM"
-                      ? "warning"
-                      : "info"
-                }
-                className="px-3 py-1 text-xs uppercase tracking-[0.16em]"
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
+                  priorityTone[recommendation.priority] || "bg-slate-400/10 text-slate-300"
+                }`}
               >
                 {recommendation.priority}
-              </Badge>
+              </span>
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-300">
               {recommendation.description}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge tone="neutral" className="px-3 py-1 text-[11px] uppercase tracking-[0.16em]">
+              <span className="rounded-full border border-slate-700 bg-slate-950 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-300">
                 {recommendation.recommendationType?.replaceAll("_", " ") || "General"}
-              </Badge>
+              </span>
             </div>
             <p className="mt-4 text-xs uppercase tracking-[0.16em] text-slate-500">
               Why: {recommendation.reason}

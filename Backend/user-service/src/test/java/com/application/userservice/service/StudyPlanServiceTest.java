@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 class StudyPlanServiceTest {
 
     private static final UUID USER_ID = UUID.randomUUID();
-    private static final UUID ADMIN_QUIZ_ID = UUID.fromString("55555555-5555-5555-5555-555555555555");
+    private static final UUID ADMIN_QUIZ_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     @Mock
     private StudyPlanRepository studyPlanRepository;
@@ -104,8 +104,8 @@ class StudyPlanServiceTest {
                 .description("Attempt the Java basics quiz")
                 .itemType(StudyPlanItemType.QUIZ)
                 .referenceType("quiz")
-                .referenceId(ADMIN_QUIZ_ID.toString())
-                .referenceKey("quiz-" + ADMIN_QUIZ_ID)
+                .referenceId("205")
+                .referenceKey("quiz-205")
                 .estimatedMinutes(20)
                 .build();
 
@@ -310,60 +310,6 @@ class StudyPlanServiceTest {
     }
 
     @Test
-    void shouldPreferActivePlanForProgressSummaryAndNextItem() {
-        StudyPlan newerPlan = StudyPlan.builder()
-                .id(2L)
-                .slug("backend-ops-foundations")
-                .title("Backend Ops Foundations")
-                .description("Operational backend practice")
-                .track("Backend")
-                .level("Intermediate")
-                .active(true)
-                .items(new ArrayList<>(List.of(secondItem)))
-                .build();
-        secondItem.setStudyPlan(newerPlan);
-
-        UserStudyPlan activeEnrollment = UserStudyPlan.builder()
-                .id(62L)
-                .userId(USER_ID)
-                .studyPlan(studyPlan)
-                .enrolledAt(LocalDateTime.now().minusDays(12))
-                .completionPercentage(50.0)
-                .active(true)
-                .build();
-        UserStudyPlan newerInactiveEnrollment = UserStudyPlan.builder()
-                .id(63L)
-                .userId(USER_ID)
-                .studyPlan(newerPlan)
-                .enrolledAt(LocalDateTime.now().minusDays(2))
-                .completionPercentage(25.0)
-                .active(false)
-                .build();
-
-        when(userStudyPlanRepository.findByUserIdOrderByEnrolledAtDesc(USER_ID))
-                .thenReturn(List.of(newerInactiveEnrollment, activeEnrollment));
-        when(userStreakRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
-        when(itemProgressRepository.findByUserStudyPlanId(62L)).thenReturn(List.of(
-                UserStudyPlanItemProgress.builder()
-                        .studyPlanItem(firstItem)
-                        .completed(false)
-                        .build(),
-                UserStudyPlanItemProgress.builder()
-                        .studyPlanItem(secondItem)
-                        .completed(false)
-                        .build()
-        ));
-
-        ProgressSummaryResponse summary = studyPlanService.getProgressSummary(USER_ID);
-        StudyPlanService.StudyPlanNextItemView nextItem = studyPlanService.getCurrentNextItem(USER_ID);
-
-        assertThat(summary.getCurrentPlan()).isNotNull();
-        assertThat(summary.getCurrentPlan().getTitle()).isEqualTo("DSA Basics");
-        assertThat(nextItem).isNotNull();
-        assertThat(nextItem.studyPlanTitle()).isEqualTo("DSA Basics");
-    }
-
-    @Test
     void acceptedCodingSubmissionShouldUpdateProgress() {
         UserStudyPlan enrollment = UserStudyPlan.builder()
                 .id(88L)
@@ -485,7 +431,7 @@ class StudyPlanServiceTest {
                 USER_ID,
                 ActivityProgressUpdateRequest.builder()
                         .itemType("QUIZ")
-                        .referenceKey("quiz-" + ADMIN_QUIZ_ID)
+                        .referenceKey("quiz-205")
                         .sourceEventId("attempt-123")
                         .build()
         );

@@ -1,37 +1,45 @@
 server:
-  port: ${SERVER_PORT:8080}
-  shutdown: graceful
-  forward-headers-strategy: framework
+  port: 8080
 
 spring:
   application:
     name: api-gateway
-  lifecycle:
-    timeout-per-shutdown-phase: 30s
+
   cloud:
     gateway:
       discovery:
         locator:
           enabled: false
           lower-case-service-id: false
-security:
-  jwt:
-    secret: ${SECURITY_JWT_SECRET:cmFua3gtbG9jYWwtZG9ja2VyLXNlY3JldC1mb3Itand0LTIwMjY=}
+
 
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka}
+      defaultZone: http://localhost:8761/eureka
+
   instance:
     prefer-ip-address: true
 
+
 logging:
   level:
-    org.springframework.cloud.gateway: ${GATEWAY_LOG_LEVEL:INFO}
-    reactor.netty.http.client: ${GATEWAY_NETTY_LOG_LEVEL:WARN}
-    reactor.netty.channel: ${GATEWAY_NETTY_CHANNEL_LOG_LEVEL:WARN}
-    org.springframework.web: ${GATEWAY_WEB_LOG_LEVEL:INFO}
-    org.springframework.validation: ${GATEWAY_VALIDATION_LOG_LEVEL:INFO}
+    # Gateway internals
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway.handler: TRACE
+    org.springframework.cloud.gateway.handler.FilteringWebHandler: TRACE
+    org.springframework.cloud.gateway.handler.RoutePredicateHandlerMapping: TRACE
+
+    # Reactor Netty (HTTP client inside gateway)
+    reactor.netty.http.client: DEBUG
+    reactor.netty.channel: DEBUG
+
+    # WebFlux / Spring Web logging
+    org.springframework.web: DEBUG
+    org.springframework.validation: DEBUG
+    org.springframework.http.codec: DEBUG
+
+
 
 metrics:
   export:
@@ -39,18 +47,4 @@ metrics:
       enabled: true
 
 observation:
-  enabled: true
-
-management:
-  endpoint:
-    health:
-      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:never}
-      probes:
-        enabled: true
-  info:
-    env:
-      enabled: ${MANAGEMENT_INFO_ENV_ENABLED:false}
-  endpoints:
-    web:
-      exposure:
-        include: ${MANAGEMENT_WEB_EXPOSURE:health,info}
+    enabled: true

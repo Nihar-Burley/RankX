@@ -7,8 +7,6 @@ import PageHeader from "../components/PageHeader";
 import ProgressSummaryWidget from "../components/ProgressSummaryWidget";
 import StatCard from "../components/StatCard";
 import StudyPlanProgressCard from "../components/StudyPlanProgressCard";
-import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
 import { logoutUser } from "../services/authService";
 import { getMyProgressSummary, getMyStudyPlans, getStudyPlanProgress } from "../services/userApi";
 import { trackProductEvent } from "../utils/eventTracker";
@@ -96,12 +94,12 @@ export default function MyProgress() {
         description="Keep your current plan visible, understand what is locked or complete, and move forward with less guesswork."
         actions={
           <>
-            <Button type="button" variant="secondary" onClick={() => navigate("/study-plans")}>
+            <button type="button" onClick={() => navigate("/study-plans")} className="btn-secondary">
               Browse plans
-            </Button>
-            <Button type="button" onClick={() => navigate("/analytics")}>
+            </button>
+            <button type="button" onClick={() => navigate("/analytics")} className="btn-primary">
               View analytics
-            </Button>
+            </button>
           </>
         }
       >
@@ -118,15 +116,7 @@ export default function MyProgress() {
       </PageHeader>
 
       {error ? (
-        <ErrorState
-          title="Progress is temporarily unavailable"
-          message={error}
-          action={
-            <Button variant="secondary" onClick={loadProgress}>
-              Try again
-            </Button>
-          }
-        />
+        <ErrorState title="Progress is temporarily unavailable" message={error} />
       ) : null}
 
       <ProgressSummaryWidget summary={summary} />
@@ -136,9 +126,9 @@ export default function MyProgress() {
           title="You have not enrolled in a study plan yet"
           description="A study plan gives RankX enough structure to show clearer next steps, progress milestones, and daily return motivation."
           action={
-            <Button type="button" onClick={() => navigate("/study-plans")}>
+            <button type="button" onClick={() => navigate("/study-plans")} className="btn-primary">
               Explore study plans
-            </Button>
+            </button>
           }
         />
       ) : (
@@ -149,7 +139,7 @@ export default function MyProgress() {
             ))}
           </div>
 
-          <Card>
+          <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
             {selectedPlanProgress ? (
               <>
                 <div className="flex items-center justify-between gap-4">
@@ -214,7 +204,7 @@ export default function MyProgress() {
                 description="Choose a plan on the left to review its milestones, completion state, and next recommended step."
               />
             )}
-          </Card>
+          </section>
         </div>
       )}
     </div>

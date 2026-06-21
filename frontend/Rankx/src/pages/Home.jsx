@@ -1,138 +1,28 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import DashboardChecklist from "../components/DashboardChecklist";
 import EmptyState from "../components/EmptyState";
 import ErrorState from "../components/ErrorState";
-import Button from "../components/ui/Button";
+import LoadingState from "../components/LoadingState";
+import PageHeader from "../components/PageHeader";
+import PageSection from "../components/PageSection";
+import RecommendedActionCard from "../components/RecommendedActionCard";
+import RecommendationCardsSection from "../components/RecommendationCardsSection";
+import StatCard from "../components/StatCard";
 import { logoutUser } from "../services/authService";
 import { getMyResults } from "../services/resultApi";
 import { getMyRecentSubmissions } from "../services/submissionApi";
-import {
-  getMyAnalytics,
-  getMyDashboardSummary,
-  getMyProfile,
-  normalizeRecommendation,
-} from "../services/userApi";
+import { getMyAnalytics, getMyDashboardSummary, getMyProfile, normalizeRecommendation } from "../services/userApi";
 import { trackProductEvent } from "../utils/eventTracker";
 import { subscribeToProgressUpdates } from "../utils/progressSync";
 
 const quickLinks = [
   { title: "Continue practice", description: "Pick up your next coding session.", route: "/problems" },
   { title: "Take a quiz", description: "Reinforce concepts with a quick attempt.", route: "/quiz" },
-  { title: "Review study plans", description: "See roadmap milestones and next steps.", route: "/study-plans" },
+  { title: "Review progress", description: "See what is complete and what comes next.", route: "/my-progress" },
 ];
 
-function StatIcon({ name }) {
-  const common = {
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "1.8",
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-    className: "h-4 w-4",
-    "aria-hidden": "true",
-  };
-
-  switch (name) {
-    case "progress":
-      return (
-        <svg {...common}>
-          <path d="m4.5 15.5 4-4 3 2.5 6-7" />
-          <path d="M14.5 7H18v3.5" />
-        </svg>
-      );
-    case "quiz":
-      return (
-        <svg {...common}>
-          <rect x="4.5" y="5" width="15" height="14" rx="2.5" />
-          <path d="M8 10h3M8 13h6M8 16h3" />
-        </svg>
-      );
-    case "code":
-      return (
-        <svg {...common}>
-          <path d="m9 8-4 4 4 4" />
-          <path d="m15 8 4 4-4 4" />
-          <path d="m13 6-2 12" />
-        </svg>
-      );
-    case "spark":
-      return (
-        <svg {...common}>
-          <path d="m12 3 1.5 4.2L17.7 9 13.5 10.5 12 14.7l-1.5-4.2L6.3 9l4.2-1.8L12 3Z" />
-        </svg>
-      );
-    case "activity":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="7" />
-          <path d="M12 8v4l2.5 1.8" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-}
-
-function DashboardMetricCard({ icon, label, value, detail, accent = "text-[#6f63ff]" }) {
-  return (
-    <article className="rounded-[22px] border border-white/8 bg-[#171b25] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)]">
-      <span className={`inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-[#1f2330] ${accent}`}>
-        <StatIcon name={icon} />
-      </span>
-      <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500">{label}</p>
-      <p className="mt-2 text-[2.05rem] font-semibold tracking-[-0.05em] text-white">{value}</p>
-      <p className="mt-2 text-sm text-slate-400">{detail}</p>
-    </article>
-  );
-}
-
-function StatusRow({ icon, title, score, detail, statusLabel }) {
-  return (
-    <div className="border-b border-white/8 px-5 py-4 last:border-b-0">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#1f2330] text-[#8c82ff]">
-            <StatIcon name={icon} />
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-white">{title}</p>
-            <p className="mt-1 text-xs text-slate-500">{detail}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] font-semibold text-slate-300">
-            {statusLabel}
-          </span>
-          <span className="text-sm font-semibold text-white">{score}</span>
-        </div>
-      </div>
-      <div className="mt-4 h-1.5 rounded-full bg-[#0f1219]">
-        <div className="h-1.5 rounded-full bg-[#6f63ff]" style={{ width: `${Math.max(8, Math.min(score, 100))}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function DashboardLoadingState() {
-  return (
-    <div className="space-y-6">
-      <div className="h-8 w-56 rounded-full bg-white/5" />
-      <div className="h-20 rounded-[24px] bg-white/5" />
-      <div className="grid gap-4 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-40 rounded-[22px] bg-white/5" />
-        ))}
-      </div>
-      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
-        <div className="h-[292px] rounded-[24px] bg-white/5" />
-        <div className="h-[292px] rounded-[24px] bg-white/5" />
-      </div>
-    </div>
-  );
-}
-
-function formatTimestamp(value) {
+const formatTimestamp = (value) => {
   if (!value) {
     return "Recently";
   }
@@ -143,7 +33,7 @@ function formatTimestamp(value) {
   }
 
   return date.toLocaleString();
-}
+};
 
 export default function Home() {
   const navigate = useNavigate();
@@ -186,7 +76,7 @@ export default function Home() {
           contentTitle: "RankX Dashboard",
           numericValue: summaryData?.streakCount || 0,
         },
-        { oncePerSessionKey: "dashboard-viewed" },
+        { oncePerSessionKey: "dashboard-viewed" }
       );
       setError("");
     } catch (err) {
@@ -215,274 +105,252 @@ export default function Home() {
     });
   }, [loadDashboard, navigate]);
 
+  const checklistOverrides = {
+    "complete-profile": Boolean(summary?.onboardingCompleted),
+    "solve-first-problem": submissions.length > 0,
+    "attempt-first-quiz": results.length > 0,
+    "review-first-result": results.length > 0,
+    "join-study-path": Boolean(summary?.currentStudyPlan?.studyPlanId),
+  };
+
   const primaryRecommendation =
     normalizeRecommendation(analytics?.primaryRecommendation) ||
     normalizeRecommendation(summary?.recommendedFirstAction);
 
   const recommendationCards = (analytics?.recommendations || summary?.recommendations || [])
     .map(normalizeRecommendation)
-    .filter(Boolean);
-
-  const completionValue =
-    summary?.currentStudyPlan?.completionPercentage != null
-      ? `${Number(summary.currentStudyPlan.completionPercentage).toFixed(0)}%`
-      : "0%";
-
-  const codingScore = Math.round(
-    ((analytics?.codingPerformance?.acceptedSubmissions || 0) /
-      Math.max(analytics?.codingPerformance?.totalSubmissions || 1, 1)) *
-      100,
-  );
-  const quizScore = Math.round(analytics?.quizPerformance?.averagePercentage || 0);
-  const planScore = Math.round(summary?.currentStudyPlan?.completionPercentage || 0);
-  const momentumScore = Math.min((summary?.streakCount || 0) * 11, 100);
+    .filter(Boolean)
+    .filter(
+      (recommendation, index, items) =>
+        items.findIndex(
+          (candidate) => candidate.title === recommendation.title && candidate.route === recommendation.route
+        ) === index
+    );
 
   const activityFeed = useMemo(
     () =>
       [
-        ...results.slice(0, 4).map((result) => ({
+        ...results.slice(0, 3).map((result) => ({
           id: `quiz-${result.attemptId}`,
-          label: `Quiz Completed - ${result.quizTitle || `Quiz #${result.quizId}`}`,
-          meta: `Score ${result.percentage}%`,
+          label: result.quizTitle || `Quiz #${result.quizId}`,
+          meta: `${result.percentage}% correct`,
           time: result.completedAt || result.submittedAt,
           route: `/quiz/review/${result.attemptId}`,
+          type: "Quiz",
         })),
-        ...submissions.slice(0, 4).map((submission) => ({
+        ...submissions.slice(0, 3).map((submission) => ({
           id: `submission-${submission.id}`,
-          label: `${submission.status} - Problem #${submission.problemId}`,
-          meta: `Submission ${submission.id}`,
+          label: `Problem #${submission.problemId}`,
+          meta: submission.status,
           time: submission.createdAt,
           route: `/submissions/${submission.id}`,
+          type: "Practice",
         })),
       ]
         .sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0))
-        .slice(0, 6),
-    [results, submissions],
+        .slice(0, 5),
+    [results, submissions]
   );
 
-  const statusRows = [
-    {
-      icon: "progress",
-      title: "Coding Track Health",
-      score: codingScore,
-      detail:
-        analytics?.codingPerformance?.totalSubmissions > 0
-          ? "Consistent coding submissions"
-          : "No coding submissions tracked yet",
-      statusLabel: codingScore >= 75 ? "Strong" : codingScore >= 45 ? "Moderate" : "Needs focus",
-    },
-    {
-      icon: "quiz",
-      title: "Quiz Track Health",
-      score: quizScore,
-      detail:
-        analytics?.quizPerformance?.totalAttempts > 0
-          ? `${analytics.quizPerformance.totalAttempts} quiz attempts tracked`
-          : "No quiz attempts tracked yet",
-      statusLabel: quizScore >= 75 ? "Strong" : quizScore >= 45 ? "Moderate" : "Needs focus",
-    },
-    {
-      icon: "code",
-      title: "Study Plan Pace",
-      score: planScore,
-      detail:
-        summary?.currentStudyPlan?.title
-          ? `On track for ${summary.currentStudyPlan.title}`
-          : "Choose a study plan to activate pace tracking",
-      statusLabel: planScore >= 70 ? "On track" : planScore > 0 ? "In motion" : "Not started",
-    },
-    {
-      icon: "spark",
-      title: "Learner Momentum",
-      score: momentumScore,
-      detail:
-        summary?.streakCount > 0
-          ? `Momentum active for ${summary.streakCount} day${summary.streakCount === 1 ? "" : "s"}`
-          : "Return tomorrow to build streak momentum",
-      statusLabel: momentumScore >= 60 ? "Stable" : "Needs attention",
-    },
-  ];
-
   if (loading) {
-    return <DashboardLoadingState />;
+    return (
+      <LoadingState
+        title="Loading your dashboard"
+        description="Preparing your current plan, next step, and recent activity."
+      />
+    );
   }
 
   return (
-    <div className="space-y-8">
-      {error ? (
-        <ErrorState
-          title="Dashboard data is temporarily unavailable"
-          message={error}
-          action={
-            <Button variant="secondary" onClick={loadDashboard}>
-              Try again
-            </Button>
-          }
-        />
-      ) : null}
-
-      <section className="space-y-6">
-        <div className="max-w-[760px]">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-[#7d88a0]">Daily workspace</p>
-          <h1 className="mt-4 text-[2.8rem] font-semibold leading-[1.04] tracking-[-0.045em] text-white sm:text-[3.45rem]">
-            Everything moving in your learning workspace
-          </h1>
-          <p className="mt-4 text-base leading-7 text-slate-400">
-            Welcome back{profile?.displayName ? `, ${profile.displayName}` : ""}. Keep the right signals in view, continue your next plan step, and review the latest practice without leaving the page.
-          </p>
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-4">
-          <DashboardMetricCard
-            icon="progress"
-            label="Practice progress"
-            value={completionValue}
-            detail={summary?.currentStudyPlan?.title || "No active study plan"}
-          />
-          <DashboardMetricCard
-            icon="quiz"
-            label="Quiz score"
-            value={`${quizScore || 0}%`}
-            detail={
-              analytics?.quizPerformance?.totalAttempts
-                ? `${analytics.quizPerformance.totalAttempts} tracked attempts`
-                : "Start a quiz to build your score trend"
+    <div className="app-container space-y-8">
+      <PageHeader
+        eyebrow="Dashboard"
+        title={`Welcome back${profile?.displayName ? `, ${profile.displayName}` : ""}`}
+        description="See your current direction, continue the right next step, and review recent progress without hunting through the app."
+        actions={
+          <button
+            type="button"
+            onClick={() =>
+              navigate(
+                summary?.currentStudyPlan?.studyPlanId
+                  ? `/study-plans/${summary.currentStudyPlan.studyPlanId}`
+                  : "/study-plans"
+              )
             }
-            accent="text-[#8cc8ff]"
-          />
-          <DashboardMetricCard
-            icon="code"
-            label="Recent submissions"
-            value={submissions.length}
-            detail="Coding submissions currently in view"
-            accent="text-[#a58bff]"
-          />
-          <DashboardMetricCard
-            icon="spark"
-            label="Recommendation signals"
-            value={(recommendationCards.length || 0) + (primaryRecommendation ? 1 : 0)}
-            detail={primaryRecommendation?.title || "New insights unlock after activity"}
-            accent="text-[#6f63ff]"
-          />
+            className="btn-primary"
+          >
+            {summary?.currentStudyPlan?.studyPlanId ? "Continue study plan" : "Choose a study plan"}
+          </button>
+        }
+      >
+        <div className="flex flex-wrap gap-2">
+          {summary?.goal ? <span className="badge-neutral">Goal: {summary.goal}</span> : null}
+          {summary?.preferredTrack ? <span className="badge-neutral">Track: {summary.preferredTrack}</span> : null}
+          {summary?.skillLevel ? <span className="badge-neutral">Level: {summary.skillLevel}</span> : null}
         </div>
+      </PageHeader>
+
+      {error ? <ErrorState title="Dashboard data is temporarily unavailable" message={error} /> : null}
+
+      <section className="grid gap-4 md:grid-cols-3">
+        <StatCard
+          label="Current progress"
+          value={
+            summary?.currentStudyPlan?.completionPercentage != null
+              ? `${Number(summary.currentStudyPlan.completionPercentage).toFixed(0)}%`
+              : "0%"
+          }
+          detail={summary?.currentStudyPlan?.title || "No study plan selected yet"}
+          tone="cyan"
+        />
+        <StatCard
+          label="Next action"
+          value={summary?.currentStudyPlan?.nextItemTitle || primaryRecommendation?.title || "Choose your next session"}
+          detail="The clearest place to continue right now"
+          tone="emerald"
+        />
+        <StatCard
+          label="Streak"
+          value={summary?.streakCount ?? 0}
+          detail="Come back tomorrow to keep momentum alive"
+          tone="amber"
+        />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
-        <article className="overflow-hidden rounded-[24px] border border-white/8 bg-[#171b25] shadow-[0_20px_52px_rgba(0,0,0,0.18)]">
-          <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-white">
-              <span className="text-[#8c82ff]">
-                <StatIcon name="spark" />
-              </span>
-              Status Matrix
+      <RecommendedActionCard action={primaryRecommendation} />
+
+      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <PageSection
+          title="Continue from where you left off"
+          description="Your current plan and next recommended step should make the next click obvious."
+          action={
+            <button type="button" onClick={() => navigate("/study-plans")} className="btn-secondary">
+              View all plans
+            </button>
+          }
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="surface-card-soft">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Current plan</p>
+              <p className="mt-3 text-xl font-semibold text-white">
+                {summary?.currentStudyPlan?.title || "No study plan selected yet"}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                {summary?.currentStudyPlan?.nextItemTitle || "Choose a study plan to unlock a guided next step."}
+              </p>
             </div>
-            <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] font-semibold text-slate-300">
-              Live
-            </span>
+            <div className="surface-card-soft">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Recent activity</p>
+              <p className="mt-3 text-xl font-semibold text-white">
+                {analytics?.activitySummary?.latestOverallActivityAt
+                  ? formatTimestamp(analytics.activitySummary.latestOverallActivityAt)
+                  : "No tracked activity yet"}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Your dashboard updates as new quiz attempts and coding submissions are tracked.
+              </p>
+            </div>
           </div>
-          <div>
-            {statusRows.map((row) => (
-              <StatusRow key={row.title} {...row} />
+        </PageSection>
+
+        <PageSection title="Quick links" description="Open the most useful next destinations without extra navigation.">
+          <div className="grid gap-3">
+            {quickLinks.map((item) => (
+              <button
+                key={item.title}
+                type="button"
+                onClick={() => navigate(item.route)}
+                className="surface-card-soft text-left transition hover:border-white/14 hover:bg-white/[0.06]"
+              >
+                <p className="text-base font-semibold text-white">{item.title}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">{item.description}</p>
+              </button>
             ))}
           </div>
-        </article>
+        </PageSection>
+      </div>
 
-        <article className="overflow-hidden rounded-[24px] border border-white/8 bg-[#171b25] shadow-[0_20px_52px_rgba(0,0,0,0.18)]">
-          <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-white">
-              <span className="text-slate-400">
-                <StatIcon name="activity" />
-              </span>
-              Activity Log
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate("/submissions")}
-              className="text-xs font-medium text-[#8c82ff] transition hover:text-[#a79fff]"
-            >
-              View all
+      <DashboardChecklist items={summary?.checklist || []} overrides={checklistOverrides} />
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <PageSection
+          title="Recent activity"
+          description="See the last few things you completed so it is easy to continue or review."
+          action={
+            <button type="button" onClick={() => navigate("/submissions")} className="btn-ghost">
+              View history
             </button>
-          </div>
-          <div className="divide-y divide-white/8">
-            {activityFeed.length > 0 ? (
-              activityFeed.map((item) => (
+          }
+        >
+          {activityFeed.length === 0 ? (
+            <EmptyState
+              title="No recent activity yet"
+              description="Start with one coding problem or one quiz attempt and your recent activity will appear here."
+            />
+          ) : (
+            <div className="space-y-3">
+              {activityFeed.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => navigate(item.route)}
-                  className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left transition hover:bg-white/[0.02]"
+                  className="surface-card-soft flex w-full items-start justify-between gap-4 text-left transition hover:border-white/14 hover:bg-white/[0.06]"
                 >
                   <div>
-                    <p className="text-sm font-semibold text-white">{item.label}</p>
-                    <p className="mt-1 text-xs text-slate-500">{item.meta}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{item.type}</p>
+                    <p className="mt-2 text-sm font-medium text-white">{item.label}</p>
+                    <p className="mt-1 text-sm text-slate-400">{item.meta}</p>
                   </div>
-                  <span className="shrink-0 text-xs text-slate-500">{formatTimestamp(item.time)}</span>
-                </button>
-              ))
-            ) : (
-              <div className="px-5 py-8 text-sm text-slate-400">
-                No tracked activity yet. Start one coding problem or one quiz to populate this log.
-              </div>
-            )}
-          </div>
-        </article>
-      </section>
-
-      {primaryRecommendation ? (
-        <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <article className="rounded-[24px] border border-white/8 bg-[#171b25] p-6 shadow-[0_20px_52px_rgba(0,0,0,0.18)]">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-[#7d88a0]">Recommended next move</p>
-            <h2 className="mt-4 text-[1.8rem] font-semibold tracking-[-0.04em] text-white">
-              {primaryRecommendation.title}
-            </h2>
-            <p className="mt-3 max-w-[560px] text-sm leading-7 text-slate-400">{primaryRecommendation.description}</p>
-            <p className="mt-5 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-              {primaryRecommendation.reason}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button type="button" onClick={() => navigate(primaryRecommendation.route)}>
-                Continue plan
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => navigate("/analytics")}>
-                Review insights
-              </Button>
-            </div>
-          </article>
-
-          <article className="rounded-[24px] border border-white/8 bg-[#171b25] p-6 shadow-[0_20px_52px_rgba(0,0,0,0.18)]">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-[#7d88a0]">Quick links</p>
-            <div className="mt-4 grid gap-3">
-              {quickLinks.map((item) => (
-                <button
-                  key={item.title}
-                  type="button"
-                  onClick={() => navigate(item.route)}
-                  className="rounded-[18px] border border-white/8 bg-[#111520] px-4 py-4 text-left transition hover:border-white/12 hover:bg-[#151926]"
-                >
-                  <p className="text-sm font-semibold text-white">{item.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">{item.description}</p>
+                  <p className="text-xs text-slate-500">{formatTimestamp(item.time)}</p>
                 </button>
               ))}
             </div>
-          </article>
-        </section>
-      ) : (
-        <EmptyState
-          title="Your dashboard is ready for a first win"
-          description="Choose a study plan, coding problem, or quiz attempt. As soon as you start, RankX will turn this page into a clearer daily workspace with progress and smarter next actions."
-          action={
-            <div className="flex flex-wrap justify-center gap-3">
-              <Button onClick={() => navigate("/study-plans")}>Choose a study plan</Button>
-              <Button variant="secondary" onClick={() => navigate("/problems")}>
-                Start practice
-              </Button>
-              <Button variant="secondary" onClick={() => navigate("/quiz")}>
-                Take a quiz
-              </Button>
+          )}
+        </PageSection>
+
+        <PageSection title="Where to focus" description="Use these signals when you want a quick sense of what needs attention next.">
+          <div className="space-y-4">
+            <div className="surface-card-soft">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Coding weak topics</p>
+              {(analytics?.codingPerformance?.weakTopics || []).length ? (
+                <div className="mt-3 space-y-3">
+                  {analytics.codingPerformance.weakTopics.slice(0, 2).map((topic) => (
+                    <div key={topic.topic}>
+                      <p className="text-sm font-medium text-white">{topic.topic}</p>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {Number(topic.successRate || 0).toFixed(0)}% success across {topic.attempts} attempts
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-slate-400">No coding weak topics detected yet.</p>
+              )}
             </div>
-          }
-        />
-      )}
+            <div className="surface-card-soft">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Quiz weak topics</p>
+              {(analytics?.quizPerformance?.weakTopics || []).length ? (
+                <div className="mt-3 space-y-3">
+                  {analytics.quizPerformance.weakTopics.slice(0, 2).map((topic) => (
+                    <div key={topic.topic}>
+                      <p className="text-sm font-medium text-white">{topic.topic}</p>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {Number(topic.successRate || 0).toFixed(0)}% success across {topic.attempts} attempts
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-slate-400">No quiz weak topics detected yet.</p>
+              )}
+            </div>
+          </div>
+        </PageSection>
+      </div>
+
+      {recommendationCards.length > 0 ? (
+        <RecommendationCardsSection recommendations={recommendationCards} />
+      ) : null}
     </div>
   );
 }

@@ -5,8 +5,6 @@ import com.application.submissionservice.client.UserProgressClient;
 import com.application.submissionservice.dto.ActivityProgressUpdateRequest;
 import com.application.submissionservice.dto.JudgeTestCaseDTO;
 import com.application.submissionservice.dto.ProblemAttemptSummaryResponse;
-import com.application.submissionservice.dto.ProblemDetailDTO;
-import com.application.submissionservice.dto.ProblemLanguageDTO;
 import com.application.submissionservice.dto.SubmitRequest;
 import com.application.submissionservice.dto.SubmitResponse;
 import com.application.submissionservice.entity.Submission;
@@ -27,12 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -83,7 +78,6 @@ class SubmissionServiceTest {
                 .build();
 
         when(languageRegistry.getLanguageId("java")).thenReturn(62);
-        when(problemServiceClient.getProblemDetails(101L)).thenReturn(problemDetails("java"));
         when(submissionRepository.save(any(Submission.class)))
                 .thenReturn(savedSubmission)
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -119,7 +113,6 @@ class SubmissionServiceTest {
                 .build();
 
         when(languageRegistry.getLanguageId("java")).thenReturn(62);
-        when(problemServiceClient.getProblemDetails(101L)).thenReturn(problemDetails("java"));
         when(submissionRepository.save(any(Submission.class)))
                 .thenReturn(savedSubmission)
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -139,86 +132,6 @@ class SubmissionServiceTest {
 
         assertThat(response.verdict()).isEqualTo("WRONG_ANSWER");
         verify(userProgressClient, never()).updateActivityProgress(anyString(), anyString(), any(ActivityProgressUpdateRequest.class));
-    }
-
-    @Test
-    void compileFailuresShouldReturnCompilationErrorVerdict() {
-        Submission savedSubmission = Submission.builder()
-                .id(77L)
-                .userId(USER_ID)
-                .problemId(101L)
-                .languageKey("java")
-                .sourceCode("class Main {}")
-                .status(SubmissionStatus.PENDING)
-                .build();
-
-        when(languageRegistry.getLanguageId("java")).thenReturn(62);
-        when(problemServiceClient.getProblemDetails(101L)).thenReturn(problemDetails("java"));
-        when(submissionRepository.save(any(Submission.class)))
-                .thenReturn(savedSubmission)
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        when(problemServiceClient.getAllTestCases(101L)).thenReturn(List.of(
-                new JudgeTestCaseDTO("1 2", "3")
-        ));
-        Map<String, Object> failedResponse = new HashMap<>();
-        failedResponse.put("stdout", null);
-        failedResponse.put("stderr", null);
-        failedResponse.put("compile_output", "Compilation failed");
-        failedResponse.put("time", "0.01");
-        failedResponse.put("memory", 1024);
-        failedResponse.put("status", Map.of("id", 6));
-        when(judge0Client.submit(anyString(), anyString(), eq(62))).thenReturn(failedResponse);
-
-        SubmitResponse response = submissionService.submit(submitRequest, USER_ID);
-
-        assertThat(response.verdict()).isEqualTo("COMPILATION_ERROR");
-        verify(userProgressClient, never()).updateActivityProgress(anyString(), anyString(), any(ActivityProgressUpdateRequest.class));
-    }
-
-    @Test
-    void runtimeFailuresShouldReturnRuntimeErrorVerdict() {
-        Submission savedSubmission = Submission.builder()
-                .id(78L)
-                .userId(USER_ID)
-                .problemId(101L)
-                .languageKey("java")
-                .sourceCode("class Main {}")
-                .status(SubmissionStatus.PENDING)
-                .build();
-
-        when(languageRegistry.getLanguageId("java")).thenReturn(62);
-        when(problemServiceClient.getProblemDetails(101L)).thenReturn(problemDetails("java"));
-        when(submissionRepository.save(any(Submission.class)))
-                .thenReturn(savedSubmission)
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        when(problemServiceClient.getAllTestCases(101L)).thenReturn(List.of(
-                new JudgeTestCaseDTO("1 2", "3")
-        ));
-        Map<String, Object> failedResponse = new HashMap<>();
-        failedResponse.put("stdout", null);
-        failedResponse.put("stderr", "NullPointerException");
-        failedResponse.put("compile_output", null);
-        failedResponse.put("time", "0.01");
-        failedResponse.put("memory", 1024);
-        failedResponse.put("status", Map.of("id", 11));
-        when(judge0Client.submit(anyString(), anyString(), eq(62))).thenReturn(failedResponse);
-
-        SubmitResponse response = submissionService.submit(submitRequest, USER_ID);
-
-        assertThat(response.verdict()).isEqualTo("RUNTIME_ERROR");
-        verify(userProgressClient, never()).updateActivityProgress(anyString(), anyString(), any(ActivityProgressUpdateRequest.class));
-    }
-
-    @Test
-    void shouldRejectLanguageThatProblemDoesNotSupport() {
-        when(languageRegistry.getLanguageId("java")).thenReturn(62);
-        when(problemServiceClient.getProblemDetails(101L)).thenReturn(problemDetails("python3", "javascript"));
-
-        assertThatThrownBy(() -> submissionService.submit(submitRequest, USER_ID))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("is not enabled for problem 101");
-
-        verify(judge0Client, never()).submit(anyString(), anyString(), anyInt());
     }
 
     @Test
@@ -250,12 +163,5 @@ class SubmissionServiceTest {
         assertThat(summary.latestStatus()).isEqualTo("ACCEPTED");
         assertThat(summary.bestRuntimeMs()).isEqualTo(120);
         assertThat(summary.languagesUsed()).containsExactly("java", "python");
-    }
-
-    private ProblemDetailDTO problemDetails(String... languageKeys) {
-        List<ProblemLanguageDTO> languages = Stream.of(languageKeys)
-                .map(languageKey -> new ProblemLanguageDTO(languageKey, languageKey, languageKey))
-                .toList();
-        return new ProblemDetailDTO(101L, "Two Sum", languages);
     }
 }

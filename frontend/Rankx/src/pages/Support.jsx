@@ -1,8 +1,3 @@
-import PageHeader from "../components/PageHeader";
-import StatCard from "../components/StatCard";
-import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
-
 export default function Support() {
   const faq = [
     "How do I continue a partially completed practice session?",
@@ -12,20 +7,19 @@ export default function Support() {
 
   return (
     <div className="app-container space-y-6">
-      <PageHeader
-        eyebrow="Help & Support"
-        title="Get help quickly"
-        description="Support, guidance, and escalation paths should be easy to find from the main product navigation."
-      >
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatCard label="Support topics" value="3" detail="Account, billing, and product guidance paths" tone="cyan" />
-          <StatCard label="Help surface" value="Always visible" detail="Easy to find from the shared dashboard shell" tone="violet" />
-          <StatCard label="Knowledge base" value="Ready" detail="Can be connected when backend help content exists" tone="emerald" />
-        </div>
-      </PageHeader>
+      <header className="page-header">
+        <p className="eyebrow">Help & Support</p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Get help quickly
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
+          Support, guidance, and escalation paths should be easy to find from the
+          main product navigation.
+        </p>
+      </header>
 
       <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <Card>
+        <section className="surface-card">
           <h2 className="section-title">Contact support</h2>
           <div className="mt-6 space-y-4">
             <div>
@@ -51,24 +45,24 @@ export default function Support() {
               />
             </div>
 
-            <Button>Submit request</Button>
+            <button className="btn-primary">Submit request</button>
           </div>
-        </Card>
+        </section>
 
-        <Card>
+        <section className="surface-card">
           <h2 className="section-title">Common questions</h2>
           <div className="mt-6 space-y-4">
             {faq.map((item) => (
-              <Card key={item} variant="soft">
+              <div key={item} className="surface-card-soft">
                 <p className="text-sm font-medium text-white">{item}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-400">
                   This placeholder can be wired to a knowledge base or ticketing flow
                   whenever those backend integrations are ready.
                 </p>
-              </Card>
+              </div>
             ))}
           </div>
-        </Card>
+        </section>
       </div>
     </div>
   );

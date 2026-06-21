@@ -1,34 +1,33 @@
 import { useNavigate } from "react-router-dom";
-import Badge from "./ui/Badge";
-import Button from "./ui/Button";
-import Card from "./ui/Card";
 
 export default function StudyPlanCard({ plan }) {
   const navigate = useNavigate();
 
   return (
-    <Card
-      as="button"
+    <button
       type="button"
       onClick={() => navigate(`/study-plans/${plan.id}`)}
-      className="w-full text-left transition hover:-translate-y-0.5 hover:border-white/12"
+      className="w-full rounded-3xl border border-slate-800 bg-slate-900 p-6 text-left shadow-xl transition hover:border-slate-700 hover:bg-slate-900/90"
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge tone="brand">{plan.track}</Badge>
-        <Badge tone="warning">{plan.level}</Badge>
-        {plan.enrolled ? <Badge tone="success">Enrolled</Badge> : <Badge tone="neutral">Available</Badge>}
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-cyan-300">
+          {plan.track}
+        </span>
+        <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-amber-300">
+          {plan.level}
+        </span>
+        {plan.enrolled ? (
+          <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-emerald-300">
+            Enrolled
+          </span>
+        ) : null}
       </div>
-      <h2 className="mt-5 text-2xl font-semibold tracking-tight text-white">{plan.title}</h2>
+      <h2 className="mt-5 text-2xl font-semibold text-white">{plan.title}</h2>
       <p className="mt-3 text-sm leading-6 text-slate-400">{plan.description}</p>
-      <div className="mt-5 flex items-center justify-between gap-4">
-        <div className="text-sm text-slate-400">
-          <p>{plan.totalItems} items</p>
-          <p className="mt-1">{plan.enrolled ? "Continue where you left off" : "Open to preview and enroll"}</p>
-        </div>
-        <Button variant={plan.enrolled ? "secondary" : "primary"} size="sm">
-          {plan.enrolled ? "Continue" : "Open plan"}
-        </Button>
+      <div className="mt-5 flex items-center justify-between text-sm text-slate-400">
+        <span>{plan.totalItems} items</span>
+        <span>Open plan</span>
       </div>
-    </Card>
+    </button>
   );
 }
