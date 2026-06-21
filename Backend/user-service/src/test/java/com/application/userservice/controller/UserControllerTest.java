@@ -29,6 +29,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -235,6 +236,31 @@ class UserControllerTest {
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/users/events")
                         .principal(authentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRejectInvalidAdminStudyPlanPayload() throws Exception {
+        String payload = """
+                {
+                  "slug":"",
+                  "title":"",
+                  "description":"Bad request",
+                  "track":"",
+                  "level":"",
+                  "active":true,
+                  "items":[]
+                }
+                """;
+
+        mockMvc.perform(post("/api/users/admin/study-plans")
+                        .principal(new UsernamePasswordAuthenticationToken(
+                                USER_ID,
+                                null,
+                                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                        ))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest());

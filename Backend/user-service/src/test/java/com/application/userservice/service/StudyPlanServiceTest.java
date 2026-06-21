@@ -1,8 +1,15 @@
 package com.application.userservice.service;
 
+import com.application.userservice.client.ProblemServiceClient;
+import com.application.userservice.client.QuizServiceClient;
 import com.application.userservice.dto.ActivityProgressUpdateRequest;
 import com.application.userservice.dto.ActivityProgressUpdateResponse;
+import com.application.userservice.dto.AdminStudyPlanItemRequest;
+import com.application.userservice.dto.AdminStudyPlanRequest;
+import com.application.userservice.dto.AdminStudyPlanResponse;
+import com.application.userservice.dto.ProblemMetadataView;
 import com.application.userservice.dto.ProgressSummaryResponse;
+import com.application.userservice.dto.QuizMetadataView;
 import com.application.userservice.dto.StudyPlanDetailResponse;
 import com.application.userservice.dto.StudyPlanProgressResponse;
 import com.application.userservice.dto.StudyPlanResponse;
@@ -29,6 +36,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,6 +53,7 @@ import static org.mockito.Mockito.when;
 class StudyPlanServiceTest {
 
     private static final UUID USER_ID = UUID.randomUUID();
+    private static final UUID ADMIN_QUIZ_ID = UUID.fromString("55555555-5555-5555-5555-555555555555");
 
     @Mock
     private StudyPlanRepository studyPlanRepository;
@@ -57,6 +66,12 @@ class StudyPlanServiceTest {
 
     @Mock
     private UserStreakRepository userStreakRepository;
+
+    @Mock
+    private ProblemServiceClient problemServiceClient;
+
+    @Mock
+    private QuizServiceClient quizServiceClient;
 
     @InjectMocks
     private StudyPlanService studyPlanService;
@@ -76,6 +91,8 @@ class StudyPlanServiceTest {
                 .title("Arrays warmup")
                 .description("Solve first array challenge")
                 .itemType(StudyPlanItemType.CODING_PROBLEM)
+                .referenceType("problem")
+                .referenceId("101")
                 .referenceKey("problem-101")
                 .estimatedMinutes(30)
                 .build();
@@ -86,7 +103,9 @@ class StudyPlanServiceTest {
                 .title("Java basics quiz")
                 .description("Attempt the Java basics quiz")
                 .itemType(StudyPlanItemType.QUIZ)
-                .referenceKey("quiz-205")
+                .referenceType("quiz")
+                .referenceId(ADMIN_QUIZ_ID.toString())
+                .referenceKey("quiz-" + ADMIN_QUIZ_ID)
                 .estimatedMinutes(20)
                 .build();
 
@@ -98,7 +117,7 @@ class StudyPlanServiceTest {
                 .track("Coding")
                 .level("Beginner")
                 .active(true)
-                .items(List.of(firstItem, secondItem))
+                .items(new ArrayList<>(List.of(firstItem, secondItem)))
                 .build();
 
         firstItem.setStudyPlan(studyPlan);
@@ -291,6 +310,60 @@ class StudyPlanServiceTest {
     }
 
     @Test
+    void shouldPreferActivePlanForProgressSummaryAndNextItem() {
+        StudyPlan newerPlan = StudyPlan.builder()
+                .id(2L)
+                .slug("backend-ops-foundations")
+                .title("Backend Ops Foundations")
+                .description("Operational backend practice")
+                .track("Backend")
+                .level("Intermediate")
+                .active(true)
+                .items(new ArrayList<>(List.of(secondItem)))
+                .build();
+        secondItem.setStudyPlan(newerPlan);
+
+        UserStudyPlan activeEnrollment = UserStudyPlan.builder()
+                .id(62L)
+                .userId(USER_ID)
+                .studyPlan(studyPlan)
+                .enrolledAt(LocalDateTime.now().minusDays(12))
+                .completionPercentage(50.0)
+                .active(true)
+                .build();
+        UserStudyPlan newerInactiveEnrollment = UserStudyPlan.builder()
+                .id(63L)
+                .userId(USER_ID)
+                .studyPlan(newerPlan)
+                .enrolledAt(LocalDateTime.now().minusDays(2))
+                .completionPercentage(25.0)
+                .active(false)
+                .build();
+
+        when(userStudyPlanRepository.findByUserIdOrderByEnrolledAtDesc(USER_ID))
+                .thenReturn(List.of(newerInactiveEnrollment, activeEnrollment));
+        when(userStreakRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
+        when(itemProgressRepository.findByUserStudyPlanId(62L)).thenReturn(List.of(
+                UserStudyPlanItemProgress.builder()
+                        .studyPlanItem(firstItem)
+                        .completed(false)
+                        .build(),
+                UserStudyPlanItemProgress.builder()
+                        .studyPlanItem(secondItem)
+                        .completed(false)
+                        .build()
+        ));
+
+        ProgressSummaryResponse summary = studyPlanService.getProgressSummary(USER_ID);
+        StudyPlanService.StudyPlanNextItemView nextItem = studyPlanService.getCurrentNextItem(USER_ID);
+
+        assertThat(summary.getCurrentPlan()).isNotNull();
+        assertThat(summary.getCurrentPlan().getTitle()).isEqualTo("DSA Basics");
+        assertThat(nextItem).isNotNull();
+        assertThat(nextItem.studyPlanTitle()).isEqualTo("DSA Basics");
+    }
+
+    @Test
     void acceptedCodingSubmissionShouldUpdateProgress() {
         UserStudyPlan enrollment = UserStudyPlan.builder()
                 .id(88L)
@@ -412,7 +485,7 @@ class StudyPlanServiceTest {
                 USER_ID,
                 ActivityProgressUpdateRequest.builder()
                         .itemType("QUIZ")
-                        .referenceKey("quiz-205")
+                        .referenceKey("quiz-" + ADMIN_QUIZ_ID)
                         .sourceEventId("attempt-123")
                         .build()
         );
@@ -420,5 +493,176 @@ class StudyPlanServiceTest {
         assertThat(response.isProgressChanged()).isTrue();
         assertThat(response.getCompletedItems()).isEqualTo(1);
         assertThat(enrollment.getCompletionPercentage()).isEqualTo(100.0);
+    }
+
+    @Test
+    void canonicalReferenceFieldsShouldMatchAcceptedSubmission() {
+        firstItem.setReferenceKey("");
+        UserStudyPlan enrollment = UserStudyPlan.builder()
+                .id(91L)
+                .userId(USER_ID)
+                .studyPlan(studyPlan)
+                .completionPercentage(0.0)
+                .active(true)
+                .build();
+
+        UserStudyPlanItemProgress firstProgress = UserStudyPlanItemProgress.builder()
+                .userStudyPlan(enrollment)
+                .studyPlanItem(firstItem)
+                .completed(false)
+                .build();
+        UserStudyPlanItemProgress secondProgress = UserStudyPlanItemProgress.builder()
+                .userStudyPlan(enrollment)
+                .studyPlanItem(secondItem)
+                .completed(false)
+                .build();
+
+        when(userStudyPlanRepository.findByUserIdAndActiveTrueOrderByEnrolledAtDesc(USER_ID)).thenReturn(List.of(enrollment));
+        when(itemProgressRepository.findByUserStudyPlanId(91L)).thenReturn(List.of(firstProgress, secondProgress));
+
+        ActivityProgressUpdateResponse response = studyPlanService.markActivityCompleted(
+                USER_ID,
+                ActivityProgressUpdateRequest.builder()
+                        .itemType("CODING_PROBLEM")
+                        .referenceKey("problem-101")
+                        .sourceEventId("submission-77")
+                        .build()
+        );
+
+        assertThat(response.isProgressChanged()).isTrue();
+        assertThat(firstProgress.isCompleted()).isTrue();
+    }
+
+    @Test
+    void legacyReferenceKeyOnlyDataShouldStillWork() {
+        firstItem.setReferenceType(null);
+        firstItem.setReferenceId(null);
+        UserStudyPlan enrollment = UserStudyPlan.builder()
+                .id(92L)
+                .userId(USER_ID)
+                .studyPlan(studyPlan)
+                .completionPercentage(0.0)
+                .active(true)
+                .build();
+
+        UserStudyPlanItemProgress firstProgress = UserStudyPlanItemProgress.builder()
+                .userStudyPlan(enrollment)
+                .studyPlanItem(firstItem)
+                .completed(false)
+                .build();
+
+        when(userStudyPlanRepository.findByUserIdAndActiveTrueOrderByEnrolledAtDesc(USER_ID)).thenReturn(List.of(enrollment));
+        when(itemProgressRepository.findByUserStudyPlanId(92L)).thenReturn(List.of(firstProgress));
+
+        ActivityProgressUpdateResponse response = studyPlanService.markActivityCompleted(
+                USER_ID,
+                ActivityProgressUpdateRequest.builder()
+                        .itemType("CODING_PROBLEM")
+                        .referenceKey("problem-101")
+                        .sourceEventId("submission-88")
+                        .build()
+        );
+
+        assertThat(response.isProgressChanged()).isTrue();
+        assertThat(firstProgress.isCompleted()).isTrue();
+    }
+
+    @Test
+    void adminShouldCreateStudyPlan() {
+        AdminStudyPlanRequest request = adminRequest();
+        when(problemServiceClient.getProblemById(101L)).thenReturn(new ProblemMetadataView());
+        when(quizServiceClient.getQuizById(ADMIN_QUIZ_ID, "00000000-0000-0000-0000-000000000001", "ROLE_USER"))
+                .thenReturn(new QuizMetadataView());
+        when(studyPlanRepository.findBySlugIgnoreCase("mixed-foundations")).thenReturn(Optional.empty());
+        when(studyPlanRepository.save(any(StudyPlan.class))).thenAnswer(invocation -> {
+            StudyPlan saved = invocation.getArgument(0);
+            saved.setId(7L);
+            return saved;
+        });
+
+        AdminStudyPlanResponse response = studyPlanService.createStudyPlan(request);
+
+        assertThat(response.getId()).isEqualTo(7L);
+        assertThat(response.getItems()).hasSize(2);
+        assertThat(response.getItems().getFirst().getReferenceKey()).isEqualTo("problem-101");
+    }
+
+    @Test
+    void adminShouldUpdateStudyPlan() {
+        AdminStudyPlanRequest request = adminRequest();
+        request.setTitle("Mixed Foundations Plus");
+        when(problemServiceClient.getProblemById(101L)).thenReturn(new ProblemMetadataView());
+        when(quizServiceClient.getQuizById(ADMIN_QUIZ_ID, "00000000-0000-0000-0000-000000000001", "ROLE_USER"))
+                .thenReturn(new QuizMetadataView());
+        when(studyPlanRepository.findStudyPlanById(1L)).thenReturn(Optional.of(studyPlan));
+        when(studyPlanRepository.findBySlugIgnoreCase("mixed-foundations")).thenReturn(Optional.empty());
+        when(studyPlanRepository.save(any(StudyPlan.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminStudyPlanResponse response = studyPlanService.updateStudyPlan(1L, request);
+
+        assertThat(response.getTitle()).isEqualTo("Mixed Foundations Plus");
+        assertThat(studyPlan.getItems()).hasSize(2);
+    }
+
+    @Test
+    void adminShouldDeactivateStudyPlan() {
+        when(studyPlanRepository.findStudyPlanById(1L)).thenReturn(Optional.of(studyPlan));
+        when(studyPlanRepository.save(any(StudyPlan.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminStudyPlanResponse response = studyPlanService.deactivateStudyPlan(1L);
+
+        assertThat(response.isActive()).isFalse();
+        assertThat(studyPlan.isActive()).isFalse();
+    }
+
+    @Test
+    void invalidProblemReferenceShouldBeRejected() {
+        AdminStudyPlanRequest request = adminRequest();
+        request.getItems().getFirst().setReferenceId("bad");
+
+        assertThatThrownBy(() -> studyPlanService.createStudyPlan(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Invalid reference ID format");
+    }
+
+    @Test
+    void invalidQuizReferenceShouldBeRejected() {
+        AdminStudyPlanRequest request = adminRequest();
+        request.getItems().get(1).setReferenceId("missing-uuid");
+        when(problemServiceClient.getProblemById(101L)).thenReturn(new ProblemMetadataView());
+
+        assertThatThrownBy(() -> studyPlanService.createStudyPlan(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Invalid reference ID format");
+    }
+
+    private AdminStudyPlanRequest adminRequest() {
+        AdminStudyPlanItemRequest codingItem = new AdminStudyPlanItemRequest();
+        codingItem.setSequenceNumber(1);
+        codingItem.setTitle("Arrays warmup");
+        codingItem.setDescription("Solve a coding warmup");
+        codingItem.setItemType("CODING_PROBLEM");
+        codingItem.setReferenceType("problem");
+        codingItem.setReferenceId("101");
+        codingItem.setEstimatedMinutes(20);
+
+        AdminStudyPlanItemRequest quizItem = new AdminStudyPlanItemRequest();
+        quizItem.setSequenceNumber(2);
+        quizItem.setTitle("Java basics quiz");
+        quizItem.setDescription("Attempt a checkpoint quiz");
+        quizItem.setItemType("QUIZ");
+        quizItem.setReferenceType("quiz");
+        quizItem.setReferenceId(ADMIN_QUIZ_ID.toString());
+        quizItem.setEstimatedMinutes(15);
+
+        AdminStudyPlanRequest request = new AdminStudyPlanRequest();
+        request.setSlug("mixed-foundations");
+        request.setTitle("Mixed Foundations");
+        request.setDescription("Blend coding and quiz practice.");
+        request.setTrack("Both");
+        request.setLevel("Intermediate");
+        request.setActive(true);
+        request.setItems(List.of(codingItem, quizItem));
+        return request;
     }
 }

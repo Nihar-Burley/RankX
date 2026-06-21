@@ -1,30 +1,19 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const OPTION_KEYS = ["A", "B", "C", "D"];
 
+const buildForm = (initialData) => ({
+  questionText: initialData?.questionText || "",
+  optionA: initialData?.optionA || "",
+  optionB: initialData?.optionB || "",
+  optionC: initialData?.optionC || "",
+  optionD: initialData?.optionD || "",
+  correctOption: initialData?.correctOption || "",
+});
+
 const QuestionForm = ({ initialData = null, onSubmit, submitting = false }) => {
-  const [form, setForm] = useState({
-    questionText: "",
-    optionA: "",
-    optionB: "",
-    optionC: "",
-    optionD: "",
-    correctOption: "",
-  });
+  const [form, setForm] = useState(() => buildForm(initialData));
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!initialData) return;
-
-    setForm({
-      questionText: initialData.questionText || "",
-      optionA: initialData.optionA || "",
-      optionB: initialData.optionB || "",
-      optionC: initialData.optionC || "",
-      optionD: initialData.optionD || "",
-      correctOption: initialData.correctOption || "",
-    });
-  }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -34,17 +23,20 @@ const QuestionForm = ({ initialData = null, onSubmit, submitting = false }) => {
 
   const handleSubmit = () => {
     if (!form.questionText.trim()) {
-      return setError("Question text is required");
+      setError("Question text is required");
+      return;
     }
 
     for (const key of ["optionA", "optionB", "optionC", "optionD"]) {
       if (!form[key].trim()) {
-        return setError("All options are required");
+        setError("All options are required");
+        return;
       }
     }
 
     if (!OPTION_KEYS.includes(form.correctOption)) {
-      return setError("Please select the correct option");
+      setError("Please select the correct option");
+      return;
     }
 
     onSubmit(form);
@@ -110,19 +102,12 @@ const QuestionForm = ({ initialData = null, onSubmit, submitting = false }) => {
       </fieldset>
 
       {error ? (
-        <div
-          role="alert"
-          className="rounded-2xl border border-rose-500/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"
-        >
+        <div role="alert" className="rounded-2xl border border-rose-500/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
           {error}
         </div>
       ) : null}
 
-      <button
-        onClick={handleSubmit}
-        disabled={submitting}
-        className="btn-primary w-full"
-      >
+      <button type="button" onClick={handleSubmit} disabled={submitting} className="btn-primary w-full">
         {submitting ? "Saving..." : "Save question"}
       </button>
     </div>

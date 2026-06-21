@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { FaPlusCircle } from "react-icons/fa";
 import QuizFilters from "../components/QuizFilters";
 import QuizRow from "../components/QuizRow";
@@ -117,22 +116,22 @@ const ManageQuizzes = () => {
         </header>
 
         <section className="grid gap-4 md:grid-cols-3">
-          <motion.div whileHover={{ y: -2 }} className="stat-card">
+          <div className="stat-card">
             <p className="text-sm text-slate-400">Visible quizzes</p>
             <p className="mt-3 text-3xl font-semibold text-white">{filteredQuizzes.length}</p>
-          </motion.div>
-          <motion.div whileHover={{ y: -2 }} className="stat-card">
+          </div>
+          <div className="stat-card">
             <p className="text-sm text-slate-400">Published</p>
             <p className="mt-3 text-3xl font-semibold text-white">
               {quizzes.filter((quiz) => quiz.status === "PUBLISHED").length}
             </p>
-          </motion.div>
-          <motion.div whileHover={{ y: -2 }} className="stat-card">
+          </div>
+          <div className="stat-card">
             <p className="text-sm text-slate-400">Drafts</p>
             <p className="mt-3 text-3xl font-semibold text-white">
               {quizzes.filter((quiz) => quiz.status === "DRAFT").length}
             </p>
-          </motion.div>
+          </div>
         </section>
 
         <section className="surface-card space-y-5">

@@ -1,24 +1,39 @@
+import Card from "./ui/Card";
+
 export default function ProgressSummaryWidget({ summary }) {
   return (
-    <section className="grid gap-4 md:grid-cols-3">
-      <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-        <p className="text-sm text-slate-400">Current Plan</p>
-        <p className="mt-2 text-2xl font-semibold text-white">
+    <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr_0.8fr]">
+      <Card>
+        <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Current focus</p>
+        <p className="mt-3 text-2xl font-semibold text-white">
           {summary?.currentPlan?.title || "No active plan"}
         </p>
-      </div>
-      <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-        <p className="text-sm text-slate-400">Next Item</p>
-        <p className="mt-2 text-2xl font-semibold text-white">
+        <p className="mt-3 text-sm leading-6 text-slate-400">
+          {summary?.currentPlan?.title
+            ? "Your active study plan is the clearest path to consistent progress."
+            : "Enroll in a study plan to unlock a more guided daily workflow."}
+        </p>
+      </Card>
+      <Card>
+        <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Next best step</p>
+        <p className="mt-3 text-2xl font-semibold text-white">
           {summary?.currentPlan?.nextItemTitle || "Choose a plan"}
         </p>
-      </div>
-      <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-        <p className="text-sm text-slate-400">Streak Count</p>
-        <p className="mt-2 text-2xl font-semibold text-white">
+        <p className="mt-3 text-sm text-slate-400">
+          {summary?.currentPlan?.completionPercentage != null
+            ? `${Number(summary.currentPlan.completionPercentage).toFixed(0)}% complete`
+            : "No completion data yet"}
+        </p>
+      </Card>
+      <Card>
+        <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Momentum</p>
+        <p className="mt-3 text-3xl font-semibold text-white">
           {summary?.streakCount ?? 0}
         </p>
-      </div>
+        <p className="mt-3 text-sm text-slate-400">
+          Current streak count
+        </p>
+      </Card>
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAdminKpis } from "../services/adminAnalyticsApi";
+import { trackAdminEvent } from "../utils/eventTracker";
 
 export default function AdminKpiDashboard() {
   const [data, setData] = useState(null);
@@ -9,7 +10,21 @@ export default function AdminKpiDashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        setData(await getAdminKpis());
+        const response = await getAdminKpis();
+        setData(response);
+        trackAdminEvent(
+          {
+            eventName: "ADMIN_KPI_PAGE_VIEWED",
+            eventCategory: "ANALYTICS",
+            source: "WEB",
+            track: "ADMIN",
+            contentType: "ADMIN_DASHBOARD",
+            contentId: "admin-kpi-dashboard",
+            contentTitle: "Admin KPI Dashboard",
+            numericValue: response?.totalEvents || 0,
+          },
+          { oncePerSessionKey: "admin-kpi-dashboard-viewed" }
+        );
       } catch (err) {
         setError(err.response?.data?.message || "We could not load KPI analytics.");
       } finally {
@@ -77,6 +92,9 @@ export default function AdminKpiDashboard() {
 
         <div className="surface-card">
           <h2 className="section-title">Highlights</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Use these callouts to spot whether activation is healthy or whether engagement is being carried by only a narrow slice of the product.
+          </p>
           <div className="mt-6 space-y-4">
             {(data?.highlights || []).map((item) => (
               <div key={item.title} className="surface-card-soft">

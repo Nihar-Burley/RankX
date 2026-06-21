@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import EmptyState from "../components/EmptyState";
+import ErrorState from "../components/ErrorState";
+import LoadingState from "../components/LoadingState";
+import PageHeader from "../components/PageHeader";
 import ProgressSummaryWidget from "../components/ProgressSummaryWidget";
+import StatCard from "../components/StatCard";
 import StudyPlanProgressCard from "../components/StudyPlanProgressCard";
-import { getMyProgressSummary, getMyStudyPlans, getStudyPlanProgress } from "../services/userApi";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
 import { logoutUser } from "../services/authService";
-import { subscribeToProgressUpdates } from "../utils/progressSync";
+import { getMyProgressSummary, getMyStudyPlans, getStudyPlanProgress } from "../services/userApi";
 import { trackProductEvent } from "../utils/eventTracker";
+import { subscribeToProgressUpdates } from "../utils/progressSync";
 
 const progressStateStyles = {
   COMPLETED: "border-emerald-500/30 bg-emerald-500/10",
@@ -76,35 +83,64 @@ export default function MyProgress() {
   if (loading) {
     return (
       <div className="app-container">
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-8 text-slate-300">
-          Loading progress...
-        </div>
+        <LoadingState title="Loading progress" description="Pulling your current plan, streak, and next recommended steps." />
       </div>
     );
   }
 
   return (
     <div className="app-container space-y-8">
-      <header className="rounded-3xl border border-slate-800 bg-slate-900 p-8">
-        <p className="text-sm uppercase tracking-[0.24em] text-cyan-400">Progress Tracking</p>
-        <h1 className="mt-3 text-4xl font-bold text-white">My study progress</h1>
-        <p className="mt-3 max-w-2xl text-slate-400">
-          Track enrolled study plans, see what comes next, and keep momentum visible.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Progress Tracking"
+        title="My study progress"
+        description="Keep your current plan visible, understand what is locked or complete, and move forward with less guesswork."
+        actions={
+          <>
+            <Button type="button" variant="secondary" onClick={() => navigate("/study-plans")}>
+              Browse plans
+            </Button>
+            <Button type="button" onClick={() => navigate("/analytics")}>
+              View analytics
+            </Button>
+          </>
+        }
+      >
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard label="Active plans" value={plans.length} detail="Learning paths enrolled right now" tone="cyan" />
+          <StatCard label="Current streak" value={summary?.streakCount ?? 0} detail="Days of momentum you've maintained" tone="amber" />
+          <StatCard
+            label="Next milestone"
+            value={selectedPlanProgress?.nextItemTitle || "Choose a step"}
+            detail={selectedPlanProgress ? `${Number(selectedPlanProgress.completionPercentage || 0).toFixed(0)}% through current plan` : "Select a plan to inspect progress"}
+            tone="emerald"
+          />
+        </div>
+      </PageHeader>
 
       {error ? (
-        <div className="rounded-3xl border border-amber-500/40 bg-amber-500/10 p-8 text-amber-200">
-          {error}
-        </div>
+        <ErrorState
+          title="Progress is temporarily unavailable"
+          message={error}
+          action={
+            <Button variant="secondary" onClick={loadProgress}>
+              Try again
+            </Button>
+          }
+        />
       ) : null}
 
       <ProgressSummaryWidget summary={summary} />
 
       {plans.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900 p-8 text-slate-400">
-          You have not enrolled in a study plan yet. Browse plans to start guided progress.
-        </div>
+        <EmptyState
+          title="You have not enrolled in a study plan yet"
+          description="A study plan gives RankX enough structure to show clearer next steps, progress milestones, and daily return motivation."
+          action={
+            <Button type="button" onClick={() => navigate("/study-plans")}>
+              Explore study plans
+            </Button>
+          }
+        />
       ) : (
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-4">
@@ -113,7 +149,7 @@ export default function MyProgress() {
             ))}
           </div>
 
-          <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
+          <Card>
             {selectedPlanProgress ? (
               <>
                 <div className="flex items-center justify-between gap-4">
@@ -132,6 +168,12 @@ export default function MyProgress() {
                 <p className="mt-4 text-sm text-slate-400">
                   Completed {selectedPlanProgress.completedItems} of {selectedPlanProgress.totalItems} items
                 </p>
+                <div className="mt-4 h-2 rounded-full bg-slate-800">
+                  <div
+                    className="h-2 rounded-full bg-cyan-400"
+                    style={{ width: `${Math.min(Number(selectedPlanProgress.completionPercentage || 0), 100)}%` }}
+                  />
+                </div>
                 <p className="mt-2 text-sm text-slate-300">
                   Next item: {selectedPlanProgress.nextItemTitle || "Plan completed"}
                 </p>
@@ -157,15 +199,22 @@ export default function MyProgress() {
                               : "Locked"}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm text-slate-400">Reference: {item.referenceKey}</p>
+                      <p className="mt-2 text-sm text-slate-400">
+                        {item.itemType === "QUIZ"
+                          ? "Progress updates from real quiz completion"
+                          : "Progress updates from accepted coding submissions"}
+                      </p>
                     </div>
                   ))}
                 </div>
               </>
             ) : (
-              <p className="text-slate-400">Select a plan to inspect its progress.</p>
+              <EmptyState
+                title="Select a plan to inspect its progress"
+                description="Choose a plan on the left to review its milestones, completion state, and next recommended step."
+              />
             )}
-          </section>
+          </Card>
         </div>
       )}
     </div>

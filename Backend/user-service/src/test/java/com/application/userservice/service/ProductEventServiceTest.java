@@ -124,6 +124,33 @@ class ProductEventServiceTest {
         assertThat(response.getAverageCompletionRate()).isEqualTo(0.0);
     }
 
+    @Test
+    void shouldNormalizeEventFields() {
+        when(productEventRepository.save(any(ProductEvent.class))).thenAnswer(invocation -> {
+            ProductEvent event = invocation.getArgument(0);
+            event.setId(21L);
+            return event;
+        });
+
+        ProductEventResponse response = productEventService.ingest(
+                USER_ID,
+                "ROLE_USER",
+                ProductEventRequest.builder()
+                        .eventName("dashboard viewed")
+                        .eventCategory("progress")
+                        .source("web app")
+                        .track("coding")
+                        .contentType("problem")
+                        .outcome("accepted")
+                        .metadata(Map.of("surface", "home"))
+                        .build()
+        );
+
+        assertThat(response.getId()).isEqualTo(21L);
+        assertThat(response.getEventName()).isEqualTo("DASHBOARD_VIEWED");
+        assertThat(response.getEventCategory()).isEqualTo("PROGRESS");
+    }
+
     private ProductEvent event(
             UUID userId,
             String eventName,

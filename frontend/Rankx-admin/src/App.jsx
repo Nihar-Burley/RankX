@@ -1,63 +1,89 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import Login from "./pages/Login";
-import Dashboard from "./dashboard/Dashboard";
 import AdminShell from "./components/AdminShell";
-import ManageQuizzes from "./modules/quizzes/pages/ManageQuizzes";
-import CreateQuiz from "./modules/quizzes/pages/CreateQuiz";
-import EditQuiz from "./modules/quizzes/pages/EditQuiz";
-import QuizPreview from "./modules/quizzes/pages/QuizPreview";
-import ManageQuestions from "./modules/questions/pages/ManageQuestions";
-import CreateQuestion from "./modules/questions/pages/CreateQuestion";
-import EditQuestion from "./modules/questions/pages/EditQuestion";
-import AdminUsers from "./pages/AdminUsers";
-import AdminPlans from "./pages/AdminPlans";
-import AdminPayments from "./pages/AdminPayments";
-import AdminReports from "./pages/AdminReports";
-import AdminSupport from "./pages/AdminSupport";
-import AdminSettings from "./pages/AdminSettings";
-import AdminKpiDashboard from "./pages/AdminKpiDashboard";
-import ProblemAnalytics from "./pages/ProblemAnalytics";
-import QuizAnalytics from "./pages/QuizAnalytics";
-import QuestionAnalytics from "./pages/QuestionAnalytics";
+import Card from "./components/ui/Card";
+import LoadingSkeleton from "./components/ui/LoadingSkeleton";
+
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./dashboard/Dashboard"));
+const ManageQuizzes = lazy(() => import("./modules/quizzes/pages/ManageQuizzes"));
+const CreateQuiz = lazy(() => import("./modules/quizzes/pages/CreateQuiz"));
+const EditQuiz = lazy(() => import("./modules/quizzes/pages/EditQuiz"));
+const QuizPreview = lazy(() => import("./modules/quizzes/pages/QuizPreview"));
+const ManageQuestions = lazy(() => import("./modules/questions/pages/ManageQuestions"));
+const CreateQuestion = lazy(() => import("./modules/questions/pages/CreateQuestion"));
+const EditQuestion = lazy(() => import("./modules/questions/pages/EditQuestion"));
+const StudyPlanList = lazy(() => import("./pages/StudyPlanList"));
+const StudyPlanEditor = lazy(() => import("./pages/StudyPlanEditor"));
+const StudyPlanItemsEditor = lazy(() => import("./pages/StudyPlanItemsEditor"));
+const AdminSettings = lazy(() => import("./pages/AdminSettings"));
+const AdminKpiDashboard = lazy(() => import("./pages/AdminKpiDashboard"));
+const ProblemAnalytics = lazy(() => import("./pages/ProblemAnalytics"));
+const QuizAnalytics = lazy(() => import("./pages/QuizAnalytics"));
+const QuestionAnalytics = lazy(() => import("./pages/QuestionAnalytics"));
+
+function RouteLoader() {
+  return (
+    <div className="admin-shell flex items-center justify-center">
+      <Card className="w-full max-w-3xl">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <p className="eyebrow">Loading</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+              Preparing the admin console
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">
+              Loading navigation context, management tools, and the data needed for the next admin workflow.
+            </p>
+            <LoadingSkeleton lines={4} className="mt-6" />
+          </div>
+          <Card variant="soft" className="min-h-[240px]">
+            <LoadingSkeleton lines={6} />
+          </Card>
+        </div>
+      </Card>
+    </div>
+  );
+}
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Auth Pages */}
-        <Route path="/login" element={<Login />} />
+      <Suspense fallback={<RouteLoader />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
 
-        <Route element={<AdminShell />}>
-          <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="/admin/dashboard" element={<Dashboard />} />
-          <Route path="/admin/analytics/kpis" element={<AdminKpiDashboard />} />
-          <Route path="/admin/analytics/problems" element={<ProblemAnalytics />} />
-          <Route path="/admin/analytics/quizzes" element={<QuizAnalytics />} />
-          <Route path="/admin/analytics/questions" element={<QuestionAnalytics />} />
+          <Route element={<AdminShell />}>
+            <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/admin/dashboard" element={<Dashboard />} />
+            <Route path="/admin/analytics/kpis" element={<AdminKpiDashboard />} />
+            <Route path="/admin/analytics/problems" element={<ProblemAnalytics />} />
+            <Route path="/admin/analytics/quizzes" element={<QuizAnalytics />} />
+            <Route path="/admin/analytics/questions" element={<QuestionAnalytics />} />
 
-          {/* Quiz Pages */}
-          <Route path="/quizzes" element={<ManageQuizzes />} />
-          <Route path="/quizzes/create" element={<CreateQuiz />} />
-          <Route path="/quizzes/:id/preview" element={<QuizPreview />} />
-          <Route path="/quizzes/:id/edit" element={<EditQuiz />} />
+            <Route path="/quizzes" element={<ManageQuizzes />} />
+            <Route path="/quizzes/create" element={<CreateQuiz />} />
+            <Route path="/quizzes/:id/preview" element={<QuizPreview />} />
+            <Route path="/quizzes/:id/edit" element={<EditQuiz />} />
 
-          {/* Questions */}
-          <Route path="/quizzes/:quizId/questions" element={<ManageQuestions />} />
-          <Route path="/quizzes/:quizId/questions/create" element={<CreateQuestion />} />
-          <Route path="/quizzes/:quizId/questions/:questionId/edit" element={<EditQuestion />} />
+            <Route path="/quizzes/:quizId/questions" element={<ManageQuestions />} />
+            <Route path="/quizzes/:quizId/questions/create" element={<CreateQuestion />} />
+            <Route path="/quizzes/:quizId/questions/:questionId/edit" element={<EditQuestion />} />
 
-          {/* Placeholder management routes */}
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/plans" element={<AdminPlans />} />
-          <Route path="/admin/payments" element={<AdminPayments />} />
-          <Route path="/admin/reports" element={<AdminReports />} />
-          <Route path="/admin/support" element={<AdminSupport />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
-        </Route>
+            <Route path="/admin/users" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/admin/plans" element={<StudyPlanList />} />
+            <Route path="/admin/plans/create" element={<StudyPlanEditor />} />
+            <Route path="/admin/plans/:id/edit" element={<StudyPlanEditor />} />
+            <Route path="/admin/plans/:id/items" element={<StudyPlanItemsEditor />} />
+            <Route path="/admin/payments" element={<Navigate to="/admin/analytics/kpis" replace />} />
+            <Route path="/admin/reports" element={<Navigate to="/admin/analytics/kpis" replace />} />
+            <Route path="/admin/support" element={<Navigate to="/admin/settings" replace />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+          </Route>
 
-        {/* Default route */}
-        <Route path="*" element={<Login />} />
-      </Routes>
+          <Route path="*" element={<Login />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

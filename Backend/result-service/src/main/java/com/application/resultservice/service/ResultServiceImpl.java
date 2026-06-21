@@ -180,6 +180,7 @@ public class ResultServiceImpl implements ResultService {
                 .score(r.getScore())
                 .totalQuestions(r.getTotalQuestions())
                 .percentage(r.getPercentage())
+                .evaluatedAt(r.getEvaluatedAt())
                 .build();
     }
 

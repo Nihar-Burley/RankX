@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
-
 import { getQuizById } from "../services/quizApi";
 import { getQuestionsByQuiz } from "../../questions/services/questionApi";
 
@@ -14,23 +13,22 @@ const QuizPreview = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const quizData = await getQuizById(id);
+        const questionData = await getQuestionsByQuiz(id);
+        setQuiz(quizData);
+        setQuestions(questionData || []);
+      } catch (err) {
+        console.error("Failed to load quiz preview", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadData();
   }, [id]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const quizData = await getQuizById(id);
-      const questionData = await getQuestionsByQuiz(id);
-
-      setQuiz(quizData);
-      setQuestions(questionData || []);
-    } catch (err) {
-      console.error("Failed to load quiz preview", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -43,6 +41,7 @@ const QuizPreview = () => {
   return (
     <div className="min-h-screen bg-[#0f172a] text-white px-8 py-10">
       <button
+        type="button"
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-gray-400 hover:text-white mb-6"
       >
@@ -56,18 +55,15 @@ const QuizPreview = () => {
 
       <div className="mt-8 space-y-6">
         {questions.map((q, index) => (
-          <div
-            key={q.id}
-            className="bg-gray-900 border border-gray-800 rounded-xl p-5"
-          >
+          <div key={q.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <h3 className="font-semibold">
               Q{index + 1}. {q.questionText}
             </h3>
 
             <ul className="mt-3 space-y-1 text-gray-300">
-              {q.options.map((opt, i) => (
-                <li key={i}>
-                  {String.fromCharCode(65 + i)}. {opt}
+              {q.options.map((opt, optionIndex) => (
+                <li key={optionIndex}>
+                  {String.fromCharCode(65 + optionIndex)}. {opt}
                 </li>
               ))}
             </ul>

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { FaPlusCircle } from "react-icons/fa";
 
 import QuizFilters from "../components/QuizFilters";
@@ -101,13 +100,10 @@ const ManageQuizzes = () => {
 
       {/* STATS */}
       <div className="mb-8">
-        <motion.div
-          whileHover={{ scale: 1.03 }}
-          className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-xl shadow-md max-w-sm"
-        >
+        <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-xl shadow-md max-w-sm">
           <p className="text-gray-400 text-sm">Total Quizzes</p>
           <p className="text-3xl font-bold mt-2">{quizzes.length}</p>
-        </motion.div>
+        </div>
       </div>
 
       {/* FILTERS */}

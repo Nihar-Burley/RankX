@@ -33,6 +33,12 @@ public class StudyPlanItem {
     @Column(nullable = false)
     private StudyPlanItemType itemType;
 
+    @Column
+    private String referenceType;
+
+    @Column
+    private String referenceId;
+
     @Column(nullable = false)
     private String referenceKey;
 

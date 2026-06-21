@@ -1,22 +1,78 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ErrorState from "../components/ErrorState";
+import LoadingState from "../components/LoadingState";
 import OnboardingCard from "../components/OnboardingCard";
+import OnboardingShell from "../components/OnboardingShell";
+import SelectableCard from "../components/SelectableCard";
+import StepProgress from "../components/StepProgress";
+import Button from "../components/ui/Button";
+import { logoutUser } from "../services/authService";
 import { getMyPreferences, updateMyPreferences } from "../services/userApi";
 import { trackProductEvent } from "../utils/eventTracker";
 
-const GOALS = ["Interview Prep", "College/Exam Practice", "Skill Improvement"];
-const TRACKS = ["Coding", "Quiz", "Both"];
-const LEVELS = ["Beginner", "Intermediate", "Advanced"];
+const GOALS = [
+  {
+    key: "Interview Prep",
+    title: "Interview Prep",
+    description: "Prepare for real interview-style coding and quiz sessions.",
+  },
+  {
+    key: "College/Exam Practice",
+    title: "College/Exam Practice",
+    description: "Stay consistent for coursework, assessments, and placement prep.",
+  },
+  {
+    key: "Skill Improvement",
+    title: "Skill Improvement",
+    description: "Build stronger fundamentals and improve steadily over time.",
+  },
+];
 
-const buttonClass = (selected) =>
-  `rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
-    selected
-      ? "border-cyan-400/50 bg-cyan-400/10 text-white"
-      : "border-slate-800 bg-slate-950/70 text-slate-300 hover:border-slate-700 hover:bg-slate-900"
-  }`;
+const TRACKS = [
+  {
+    key: "Coding",
+    title: "Coding",
+    description: "Practice by solving coding problems and reviewing submissions.",
+  },
+  {
+    key: "Quiz",
+    title: "Quiz",
+    description: "Use quiz-based practice for fast concept revision and recall.",
+  },
+  {
+    key: "Both",
+    title: "Both",
+    description: "Combine coding depth with quiz repetition for balanced progress.",
+  },
+];
+
+const LEVELS = [
+  {
+    key: "Beginner",
+    title: "Beginner",
+    helper: "Just getting started",
+    description: "Start with clearer guidance and manageable first steps.",
+  },
+  {
+    key: "Intermediate",
+    title: "Intermediate",
+    helper: "Comfortable with basics",
+    description: "Build consistency and sharpen your current level.",
+  },
+  {
+    key: "Advanced",
+    title: "Advanced",
+    helper: "Preparing for advanced interviews",
+    description: "Push difficulty, speed, and review quality further.",
+  },
+];
+
+const STEP_TITLES = ["Welcome", "Goal", "Track", "Level", "Preview"];
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(0);
   const [form, setForm] = useState({
     goal: "",
     preferredTrack: "",
@@ -49,8 +105,7 @@ export default function Onboarding() {
         });
       } catch (err) {
         if (err.response?.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("role");
+          logoutUser();
           navigate("/login", { replace: true });
           return;
         }
@@ -64,155 +119,230 @@ export default function Onboarding() {
     loadPreferences();
   }, [navigate]);
 
-  const isComplete = useMemo(
-    () => Boolean(form.goal && form.preferredTrack && form.skillLevel),
-    [form]
-  );
+  const planPreview = useMemo(() => {
+    const track = form.preferredTrack || "Both";
+    const level = form.skillLevel || "Beginner";
+    const goal = form.goal || "Skill Improvement";
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!isComplete) {
-      setError("Please complete all onboarding steps before continuing.");
+    const recommendedPlanTitle =
+      track === "Coding"
+        ? `${level} Coding Path`
+        : track === "Quiz"
+          ? `${level} Quiz Path`
+          : `${level} Mixed Practice Path`;
+
+    const firstAction =
+      track === "Coding"
+        ? "Open practice and solve one coding problem."
+        : track === "Quiz"
+          ? "Start one short quiz session."
+          : "Begin with one quiz, then continue into one coding problem.";
+
+    const returnReason =
+      goal === "Interview Prep"
+        ? "Returning daily helps build speed and confidence."
+        : goal === "College/Exam Practice"
+          ? "Short, repeat sessions improve retention."
+          : "Consistent practice compounds into better long-term skill growth.";
+
+    return {
+      recommendedPlanTitle,
+      firstAction,
+      returnReason,
+    };
+  }, [form]);
+
+  const canContinue = useMemo(() => {
+    if (currentStep === 0) return true;
+    if (currentStep === 1) return Boolean(form.goal);
+    if (currentStep === 2) return Boolean(form.preferredTrack);
+    if (currentStep === 3) return Boolean(form.skillLevel);
+    if (currentStep === 4) return true;
+    return false;
+  }, [currentStep, form]);
+
+  const handleNext = async () => {
+    if (!canContinue) {
+      setError("Please complete this step before continuing.");
       return;
     }
 
-    try {
-      setSubmitting(true);
-      setError("");
-      await updateMyPreferences(form);
-      trackProductEvent({
-        eventName: "ONBOARDING_COMPLETED",
-        eventCategory: "ONBOARDING",
-        source: "WEB",
-        track: form.preferredTrack,
-        topic: form.goal,
-        outcome: form.skillLevel,
-      });
-      navigate("/home", { replace: true });
-    } catch (err) {
-      setError(err.response?.data?.message || "We could not save your preferences.");
-    } finally {
-      setSubmitting(false);
+    setError("");
+
+    if (currentStep === STEP_TITLES.length - 1) {
+      try {
+        setSubmitting(true);
+        await updateMyPreferences(form);
+        trackProductEvent({
+          eventName: "ONBOARDING_COMPLETED",
+          eventCategory: "ONBOARDING",
+          source: "WEB",
+          track: form.preferredTrack,
+          topic: form.goal,
+          outcome: form.skillLevel,
+        });
+        navigate("/home", { replace: true });
+      } catch (err) {
+        setError(err.response?.data?.message || "We could not save your preferences.");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    setCurrentStep((step) => step + 1);
+  };
+
+  const handleBack = () => {
+    if (currentStep === 0) {
+      navigate("/home");
+      return;
+    }
+
+    setError("");
+    setCurrentStep((step) => Math.max(0, step - 1));
+  };
+
+  const stepContent = () => {
+    switch (currentStep) {
+      case 0:
+        return (
+          <OnboardingCard
+            title="Set up your learning workspace"
+            description="Answer a few quick questions so RankX can show the right path and the right next step from your first session."
+            eyebrow="Welcome"
+          >
+            <div className="surface-card-soft">
+              <p className="text-sm leading-6 text-slate-300">
+                This takes less than a minute and helps RankX decide what you should do first.
+              </p>
+            </div>
+          </OnboardingCard>
+        );
+      case 1:
+        return (
+          <OnboardingCard title="What is your main goal?" description="Pick the outcome you care about most right now.">
+            <div className="grid gap-4 lg:grid-cols-3">
+              {GOALS.map((goal) => (
+                <SelectableCard
+                  key={goal.key}
+                  title={goal.title}
+                  description={goal.description}
+                  selected={form.goal === goal.key}
+                  onClick={() => setForm((current) => ({ ...current, goal: goal.key }))}
+                />
+              ))}
+            </div>
+          </OnboardingCard>
+        );
+      case 2:
+        return (
+          <OnboardingCard
+            title="Which track should RankX prioritize?"
+            description="Choose the practice style you want to spend more time in."
+          >
+            <div className="grid gap-4 lg:grid-cols-3">
+              {TRACKS.map((track) => (
+                <SelectableCard
+                  key={track.key}
+                  title={track.title}
+                  description={track.description}
+                  selected={form.preferredTrack === track.key}
+                  onClick={() => setForm((current) => ({ ...current, preferredTrack: track.key }))}
+                />
+              ))}
+            </div>
+          </OnboardingCard>
+        );
+      case 3:
+        return (
+          <OnboardingCard
+            title="How would you describe your current level?"
+            description="We will use this to keep your first action clear and appropriate."
+          >
+            <div className="grid gap-4 lg:grid-cols-3">
+              {LEVELS.map((level) => (
+                <SelectableCard
+                  key={level.key}
+                  title={level.title}
+                  helper={level.helper}
+                  description={level.description}
+                  selected={form.skillLevel === level.key}
+                  onClick={() => setForm((current) => ({ ...current, skillLevel: level.key }))}
+                />
+              ))}
+            </div>
+          </OnboardingCard>
+        );
+      case 4:
+        return (
+          <OnboardingCard
+            title="Your plan preview"
+            description="Review the path RankX will start you on and begin learning."
+            eyebrow="Preview"
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              {[
+                ["Recommended path", planPreview.recommendedPlanTitle],
+                ["First recommended action", planPreview.firstAction],
+                ["Selected goal", form.goal],
+                ["Why return tomorrow", planPreview.returnReason],
+              ].map(([label, value]) => (
+                <div key={label} className="surface-card-soft">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</p>
+                  <p className="mt-3 text-sm leading-6 text-white">{value}</p>
+                </div>
+              ))}
+            </div>
+          </OnboardingCard>
+        );
+      default:
+        return null;
     }
   };
 
   if (loading) {
+    return <LoadingState title="Loading onboarding" description="Preparing your personalized setup flow." />;
+  }
+
+  if (error && currentStep === 0) {
     return (
-      <div className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100">
-        <div className="mx-auto max-w-4xl rounded-3xl border border-slate-800 bg-slate-900 p-8 text-slate-300">
-          Loading onboarding...
-        </div>
-      </div>
+      <ErrorState
+        message={error}
+        action={
+          <button type="button" onClick={() => navigate("/home")} className="btn-secondary">
+            Back to dashboard
+          </button>
+        }
+      />
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100 md:px-10">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <header className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 p-8 shadow-2xl">
-          <p className="text-sm uppercase tracking-[0.25em] text-cyan-400">RankX Activation</p>
-          <h1 className="mt-4 text-4xl font-bold">Tell us how you want to grow</h1>
-          <p className="mt-3 max-w-2xl text-slate-300">
-            Complete onboarding once so RankX can shape your dashboard, next best action,
-            and practice direction from day one.
-          </p>
-        </header>
-
-        <form onSubmit={handleSubmit} className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-6">
-            <OnboardingCard
-              title="What is your primary goal?"
-              description="This helps RankX bias the dashboard and first action toward the type of practice you care about most."
+    <div className="min-h-screen px-0 py-0">
+      <OnboardingShell
+        title={STEP_TITLES[currentStep]}
+        subtitle="A quick setup so your dashboard feels clearer from the very first session."
+        progress={<StepProgress steps={STEP_TITLES} currentStep={currentStep} />}
+        actions={
+          <>
+            <Button type="button" variant="secondary" onClick={handleBack}>
+              {currentStep === 0 ? "Skip for now" : "Back"}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleNext}
+              disabled={!canContinue || submitting}
             >
-              <div className="grid gap-3 sm:grid-cols-2">
-                {GOALS.map((goal) => (
-                  <button
-                    key={goal}
-                    type="button"
-                    className={buttonClass(form.goal === goal)}
-                    onClick={() => setForm((current) => ({ ...current, goal }))}
-                  >
-                    {goal}
-                  </button>
-                ))}
-              </div>
-            </OnboardingCard>
+              {submitting ? "Saving..." : currentStep === STEP_TITLES.length - 1 ? "Start learning" : "Continue"}
+            </Button>
+          </>
+        }
+      >
+        <div key={currentStep}>{stepContent()}</div>
 
-            <OnboardingCard
-              title="Which track do you want to focus on?"
-              description="Choose a single lane or keep both coding and quiz practice active."
-            >
-              <div className="grid gap-3 sm:grid-cols-3">
-                {TRACKS.map((track) => (
-                  <button
-                    key={track}
-                    type="button"
-                    className={buttonClass(form.preferredTrack === track)}
-                    onClick={() => setForm((current) => ({ ...current, preferredTrack: track }))}
-                  >
-                    {track}
-                  </button>
-                ))}
-              </div>
-            </OnboardingCard>
-
-            <OnboardingCard
-              title="What is your current level?"
-              description="We use this to set expectations and steer your first action toward the right complexity."
-            >
-              <div className="grid gap-3 sm:grid-cols-3">
-                {LEVELS.map((skillLevel) => (
-                  <button
-                    key={skillLevel}
-                    type="button"
-                    className={buttonClass(form.skillLevel === skillLevel)}
-                    onClick={() => setForm((current) => ({ ...current, skillLevel }))}
-                  >
-                    {skillLevel}
-                  </button>
-                ))}
-              </div>
-            </OnboardingCard>
-          </div>
-
-          <div className="space-y-6">
-            <OnboardingCard
-              title="Your activation summary"
-              description="This preview shows what RankX will use to personalize your dashboard after you continue."
-              footer={
-                <button
-                  type="submit"
-                  disabled={!isComplete || submitting}
-                  className="w-full rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {submitting ? "Saving preferences..." : "Continue to personalized dashboard"}
-                </button>
-              }
-            >
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Goal</p>
-                  <p className="mt-2 text-sm text-white">{form.goal || "Choose your primary goal"}</p>
-                </div>
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Preferred track</p>
-                  <p className="mt-2 text-sm text-white">{form.preferredTrack || "Choose your learning track"}</p>
-                </div>
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Current level</p>
-                  <p className="mt-2 text-sm text-white">{form.skillLevel || "Choose your current level"}</p>
-                </div>
-              </div>
-            </OnboardingCard>
-
-            {error ? (
-              <div className="rounded-3xl border border-amber-500/40 bg-amber-500/10 p-5 text-sm text-amber-200">
-                {error}
-              </div>
-            ) : null}
-          </div>
-        </form>
-      </div>
+        {error && currentStep > 0 ? <ErrorState title="We need one quick fix" message={error} /> : null}
+      </OnboardingShell>
     </div>
   );
 }

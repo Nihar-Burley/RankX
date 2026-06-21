@@ -12,5 +12,6 @@ public class UserAnalyticsResponse {
     private CodingAnalyticsResponse codingPerformance;
     private QuizAnalyticsResponse quizPerformance;
     private ActivityAnalyticsResponse activitySummary;
+    private RecommendationCardResponse primaryRecommendation;
     private List<RecommendationCardResponse> recommendations;
 }

@@ -13,6 +13,15 @@ export async function trackProductEvent(event, options = {}) {
     occurredAt: event.occurredAt || new Date().toISOString(),
   };
   const dedupeKey = options.dedupeKey;
+  const oncePerSessionKey = options.oncePerSessionKey;
+
+  if (oncePerSessionKey && typeof window !== "undefined") {
+    const storageKey = `rankx:event:${oncePerSessionKey}`;
+    if (window.sessionStorage.getItem(storageKey) === "sent") {
+      return null;
+    }
+    window.sessionStorage.setItem(storageKey, "sent");
+  }
 
   if (dedupeKey && inFlightKeys.has(dedupeKey)) {
     return inFlightKeys.get(dedupeKey);
@@ -21,6 +30,9 @@ export async function trackProductEvent(event, options = {}) {
   const request = api
     .post("/users/events", payload)
     .catch((error) => {
+      if (oncePerSessionKey && typeof window !== "undefined") {
+        window.sessionStorage.removeItem(`rankx:event:${oncePerSessionKey}`);
+      }
       if (typeof window !== "undefined" && window.location.hostname === "localhost") {
         console.debug("Product event tracking skipped", payload.eventName, error?.message);
       }

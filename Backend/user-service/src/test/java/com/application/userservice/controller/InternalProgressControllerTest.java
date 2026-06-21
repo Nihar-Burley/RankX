@@ -71,4 +71,21 @@ class InternalProgressControllerTest {
                 .andExpect(jsonPath("$.progressChanged").value(true))
                 .andExpect(jsonPath("$.affectedStudyPlans").value(1));
     }
+
+    @Test
+    void shouldRejectInvalidActivityCompletionPayload() throws Exception {
+        String payload = """
+                {
+                  "itemType": "",
+                  "referenceKey": "",
+                  "sourceEventId": ""
+                }
+                """;
+
+        mockMvc.perform(post("/api/users/internal/progress/activity-completions")
+                        .principal(authentication())
+                        .contentType(APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+    }
 }

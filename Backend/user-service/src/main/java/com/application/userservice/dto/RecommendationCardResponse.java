@@ -12,4 +12,5 @@ public class RecommendationCardResponse {
     private String route;
     private String reason;
     private String priority;
+    private String recommendationType;
 }

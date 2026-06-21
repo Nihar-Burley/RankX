@@ -1,5 +1,7 @@
 package com.application.userservice.controller;
 
+import com.application.userservice.dto.AdminStudyPlanRequest;
+import com.application.userservice.dto.AdminStudyPlanResponse;
 import com.application.userservice.dto.ProgressSummaryResponse;
 import com.application.userservice.dto.StudyPlanDetailResponse;
 import com.application.userservice.dto.StudyPlanProgressResponse;
@@ -15,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -28,6 +31,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -60,6 +64,14 @@ class StudyPlanControllerTest {
                 USER_ID,
                 null,
                 List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+    }
+
+    private Authentication adminAuthentication() {
+        return new UsernamePasswordAuthenticationToken(
+                USER_ID,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
         );
     }
 
@@ -207,5 +219,92 @@ class StudyPlanControllerTest {
                 .andExpect(jsonPath("$.enrolledPlans").value(2))
                 .andExpect(jsonPath("$.streakCount").value(5))
                 .andExpect(jsonPath("$.currentPlan.title").value("DSA Basics"));
+    }
+
+    @Test
+    void adminShouldListStudyPlans() throws Exception {
+        when(studyPlanService.getAdminStudyPlans()).thenReturn(List.of(
+                AdminStudyPlanResponse.builder()
+                        .id(1L)
+                        .slug("mixed-foundations")
+                        .title("Mixed Foundations")
+                        .description("Blend tracks")
+                        .track("Both")
+                        .level("Intermediate")
+                        .active(true)
+                        .totalItems(2)
+                        .items(List.of())
+                        .build()
+        ));
+
+        mockMvc.perform(get("/api/users/admin/study-plans").principal(adminAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].slug").value("mixed-foundations"));
+    }
+
+    @Test
+    void adminShouldCreateStudyPlan() throws Exception {
+        when(studyPlanService.createStudyPlan(org.mockito.ArgumentMatchers.any(AdminStudyPlanRequest.class))).thenReturn(
+                AdminStudyPlanResponse.builder()
+                        .id(5L)
+                        .slug("mixed-foundations")
+                        .title("Mixed Foundations")
+                        .description("Blend tracks")
+                        .track("Both")
+                        .level("Intermediate")
+                        .active(true)
+                        .totalItems(2)
+                        .items(List.of())
+                        .build()
+        );
+
+        mockMvc.perform(post("/api/users/admin/study-plans")
+                        .principal(adminAuthentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "slug":"mixed-foundations",
+                                  "title":"Mixed Foundations",
+                                  "description":"Blend tracks",
+                                  "track":"Both",
+                                  "level":"Intermediate",
+                                  "active":true,
+                                  "items":[
+                                    {
+                                      "sequenceNumber":1,
+                                      "title":"Arrays warmup",
+                                      "description":"Solve a warmup",
+                                      "itemType":"CODING_PROBLEM",
+                                      "referenceType":"problem",
+                                      "referenceId":"101",
+                                      "estimatedMinutes":20
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(5))
+                .andExpect(jsonPath("$.title").value("Mixed Foundations"));
+    }
+
+    @Test
+    void adminShouldDeactivateStudyPlan() throws Exception {
+        when(studyPlanService.deactivateStudyPlan(1L)).thenReturn(
+                AdminStudyPlanResponse.builder()
+                        .id(1L)
+                        .slug("mixed-foundations")
+                        .title("Mixed Foundations")
+                        .description("Blend tracks")
+                        .track("Both")
+                        .level("Intermediate")
+                        .active(false)
+                        .totalItems(2)
+                        .items(List.of())
+                        .build()
+        );
+
+        mockMvc.perform(put("/api/users/admin/study-plans/1/deactivate").principal(adminAuthentication()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false));
     }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getQuizAnalytics } from "../services/adminAnalyticsApi";
+import { trackAdminEvent } from "../utils/eventTracker";
 
 export default function QuizAnalytics() {
   const [data, setData] = useState(null);
@@ -9,7 +10,21 @@ export default function QuizAnalytics() {
   useEffect(() => {
     const load = async () => {
       try {
-        setData(await getQuizAnalytics());
+        const response = await getQuizAnalytics();
+        setData(response);
+        trackAdminEvent(
+          {
+            eventName: "ADMIN_ANALYTICS_QUIZZES_VIEWED",
+            eventCategory: "ANALYTICS",
+            source: "WEB",
+            track: "ADMIN",
+            contentType: "QUIZ_ANALYTICS",
+            contentId: "admin-quiz-analytics",
+            contentTitle: "Quiz Analytics",
+            numericValue: response?.totalTrackedItems || 0,
+          },
+          { oncePerSessionKey: "admin-quiz-analytics-viewed" }
+        );
       } catch (err) {
         setError(err.response?.data?.message || "We could not load quiz analytics.");
       } finally {

@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import EmptyState from "../../components/EmptyState";
+import ErrorState from "../../components/ErrorState";
+import LoadingState from "../../components/LoadingState";
+import PageHeader from "../../components/PageHeader";
+import StatCard from "../../components/StatCard";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
 import { getResult } from "../../services/resultApi";
 import { emitProgressUpdated } from "../../utils/progressSync";
 
@@ -10,12 +17,10 @@ const QuizResult = () => {
 
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(attemptId));
 
   useEffect(() => {
     if (!attemptId) {
-      setError("Invalid attempt");
-      setLoading(false);
       return;
     }
 
@@ -35,20 +40,34 @@ const QuizResult = () => {
       });
   }, [attemptId]);
 
+  if (!attemptId) {
+    return (
+      <div className="app-container py-8">
+        <EmptyState
+          title="Invalid attempt"
+          description="We could not find a valid quiz attempt to show."
+          action={<Button variant="secondary" onClick={() => navigate("/quiz")}>Back to quizzes</Button>}
+        />
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
-        <p className="text-white text-xl animate-pulse">
-          Calculating your result...
-        </p>
+      <div className="app-container py-8">
+        <LoadingState title="Calculating your result" description="Preparing score, percentage, and suggested next steps." />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
-        <p className="text-red-400 text-xl">{error}</p>
+      <div className="app-container py-8">
+        <ErrorState
+          title="Result unavailable"
+          message={error}
+          action={<Button variant="secondary" onClick={() => navigate("/quiz")}>Back to quizzes</Button>}
+        />
       </div>
     );
   }
@@ -56,52 +75,65 @@ const QuizResult = () => {
   const isPassed = result.percentage >= 40;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#020617] to-[#020617] text-white flex justify-center items-center px-4">
-      <div className="w-full max-w-md bg-[#0f172a] rounded-3xl p-10 shadow-2xl text-center">
-        <div className="mb-4 text-6xl">{isPassed ? "Success" : "Retry"}</div>
+    <div className="app-container space-y-8 py-8">
+      <PageHeader
+        eyebrow="Quiz Result"
+        title={isPassed ? "Nice work" : "Keep going"}
+        description={
+          isPassed
+            ? "You completed this quiz with a passing score. Use the result to keep momentum going."
+            : "You completed the quiz. Review the result, understand the gap, and try again when ready."
+        }
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => navigate("/quiz")}>
+              Attempt another quiz
+            </Button>
+            <Button onClick={() => navigate("/home")}>Go to dashboard</Button>
+          </>
+        }
+      />
 
-        <h1 className="text-3xl font-bold mb-2">
-          {isPassed ? "Congratulations!" : "Better Luck Next Time"}
-        </h1>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Score" value={`${result.score}/${result.totalQuestions}`} detail="Correct answers out of total questions" tone="cyan" />
+        <StatCard label="Percentage" value={`${result.percentage.toFixed(2)}%`} detail={isPassed ? "Passing result" : "Below the current pass threshold"} tone={isPassed ? "emerald" : "amber"} />
+        <StatCard label="Next move" value={isPassed ? "Continue plan" : "Review and retry"} detail="Recommended action based on this result" tone="violet" />
+        <StatCard label="Attempt ID" value={`#${attemptId}`} detail="Use this to open detailed review later" tone="amber" />
+      </section>
 
-        <p className="mb-8 text-slate-400">Here's how you performed in this quiz</p>
-
-        <div className="bg-[#020617] rounded-2xl py-6 mb-6">
-          <p className="text-slate-400 text-sm mb-1">Your Score</p>
-          <p className="text-5xl font-extrabold text-indigo-400">
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card>
+          <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Result summary</p>
+          <p className="mt-3 text-5xl font-extrabold text-white">
             {result.score}
-            <span className="text-2xl text-slate-400">
-              {" "} / {result.totalQuestions}
-            </span>
+            <span className="text-2xl text-slate-400"> / {result.totalQuestions}</span>
           </p>
-        </div>
-
-        <div className="mb-8">
-          <p className="text-lg text-slate-300">Percentage</p>
-          <p
-            className={`text-2xl font-semibold mt-1 ${
-              isPassed ? "text-green-400" : "text-red-400"
-            }`}
-          >
-            {result.percentage.toFixed(2)}%
+          <p className="mt-4 text-sm leading-7 text-slate-400">
+            {isPassed
+              ? "You cleared the current threshold. The best next step is to keep momentum by continuing your guided path or reviewing another concept area."
+              : "Use this result as a checkpoint. Review the detailed attempt and take another quiz after reinforcing the weaker concepts."}
           </p>
-        </div>
+        </Card>
 
-        <div className="flex flex-col gap-4">
-          <button
-            onClick={() => navigate("/home")}
-            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 transition text-lg font-medium"
-          >
-            Go to Dashboard
-          </button>
-
-          <button
-            onClick={() => navigate("/quiz")}
-            className="w-full py-3 rounded-xl border border-slate-600 hover:bg-slate-800 transition text-lg"
-          >
-            Attempt Another Quiz
-          </button>
-        </div>
+        <Card>
+          <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Primary action</p>
+          <h2 className="mt-2 text-xl font-semibold text-white">
+            {isPassed ? "Continue your learning plan" : "Review this attempt in detail"}
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-slate-400">
+            {isPassed
+              ? "Move back into your dashboard or progress flow while the momentum is still strong."
+              : "Open the full review to understand which answers were missed before attempting another quiz."}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button onClick={() => navigate(`/quiz/review/${attemptId}`)}>
+              Open detailed review
+            </Button>
+            <Button variant="secondary" onClick={() => navigate("/my-progress")}>
+              View progress
+            </Button>
+          </div>
+        </Card>
       </div>
     </div>
   );
