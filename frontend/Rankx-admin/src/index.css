@@ -4,16 +4,19 @@
   color-scheme: dark;
   --font-sans: "IBM Plex Sans", "Segoe UI Variable", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", "Consolas", monospace;
-  --bg-canvas: #0a1220;
-  --bg-elevated: rgba(13, 24, 40, 0.9);
-  --bg-soft: rgba(18, 32, 54, 0.74);
-  --border-subtle: rgba(148, 163, 184, 0.16);
+  --bg-canvas: #08111f;
+  --bg-elevated: rgba(11, 23, 40, 0.86);
+  --bg-soft: rgba(15, 30, 51, 0.72);
+  --bg-strong: #10213a;
+  --border-subtle: rgba(148, 163, 184, 0.18);
   --border-strong: rgba(148, 163, 184, 0.28);
   --text-primary: #f8fafc;
-  --text-secondary: #dbe6f3;
-  --text-muted: #93a9c4;
+  --text-secondary: #cbd5e1;
+  --text-muted: #8fa2bd;
   --brand: #7dd3fc;
   --brand-strong: #2563eb;
+  --brand-ink: #081a38;
+  --accent: #818cf8;
   --success: #34d399;
   --warning: #fbbf24;
   --danger: #fb7185;
@@ -30,8 +33,9 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(96, 165, 250, 0.08), transparent 22%),
-    linear-gradient(180deg, #0a1220 0%, #09111d 52%, #050b14 100%);
+    radial-gradient(circle at top, rgba(125, 211, 252, 0.12), transparent 24%),
+    radial-gradient(circle at 85% 0%, rgba(129, 140, 248, 0.08), transparent 22%),
+    linear-gradient(180deg, #07111f 0%, #091321 48%, #050b15 100%);
   color: var(--text-primary);
   font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
@@ -80,9 +84,17 @@ textarea {
     @apply mx-auto w-full max-w-7xl;
   }
 
+  .app-shell {
+    @apply min-h-screen px-4 py-6 text-slate-50 sm:px-6 lg:px-8;
+  }
+
+  .app-container {
+    @apply mx-auto w-full max-w-7xl;
+  }
+
   .page-header {
     @apply relative overflow-hidden rounded-[28px] border px-6 py-6 shadow-[var(--shadow-lg)] sm:px-8 sm:py-8;
-    background: linear-gradient(180deg, rgba(13, 24, 40, 0.94) 0%, rgba(10, 18, 31, 0.9) 100%);
+    background: linear-gradient(180deg, rgba(12, 25, 45, 0.94) 0%, rgba(8, 18, 34, 0.92) 100%);
     border-color: var(--border-subtle);
     backdrop-filter: blur(18px);
   }
@@ -90,11 +102,11 @@ textarea {
   .page-header::after {
     content: "";
     position: absolute;
-    inset: auto -10% -60% auto;
-    width: 240px;
-    height: 240px;
+    inset: auto -8% -55% auto;
+    width: 220px;
+    height: 220px;
     border-radius: 999px;
-    background: radial-gradient(circle, rgba(125, 211, 252, 0.16), transparent 70%);
+    background: radial-gradient(circle, rgba(125, 211, 252, 0.18), transparent 70%);
     pointer-events: none;
   }
 
@@ -105,19 +117,21 @@ textarea {
 
   .surface-card {
     @apply rounded-[24px] border p-5 shadow-[var(--shadow-md)] backdrop-blur-xl;
-    background: var(--bg-elevated);
+    background:
+      linear-gradient(180deg, rgba(13, 24, 42, 0.94), rgba(9, 19, 34, 0.92)),
+      var(--bg-elevated);
     border-color: var(--border-subtle);
   }
 
   .surface-card-soft {
     @apply rounded-[20px] border p-4;
-    background: var(--bg-soft);
+    background: linear-gradient(180deg, rgba(16, 29, 49, 0.84), rgba(12, 24, 41, 0.76));
     border-color: rgba(148, 163, 184, 0.12);
   }
 
   .stat-card {
     @apply rounded-[22px] border p-5;
-    background: linear-gradient(180deg, rgba(17, 33, 55, 0.92), rgba(10, 19, 31, 0.88));
+    background: linear-gradient(180deg, rgba(18, 34, 56, 0.92), rgba(12, 22, 39, 0.88));
     border-color: rgba(148, 163, 184, 0.16);
   }
 
@@ -135,7 +149,7 @@ textarea {
 
   .input-base {
     @apply w-full rounded-2xl border px-4 py-3 text-sm text-slate-50 outline-none transition duration-200 placeholder:text-slate-500;
-    background: rgba(8, 15, 27, 0.8);
+    background: rgba(8, 17, 31, 0.76);
     border-color: rgba(148, 163, 184, 0.16);
   }
 
@@ -144,15 +158,15 @@ textarea {
   }
 
   .input-base:focus-visible {
-    border-color: rgba(125, 211, 252, 0.9);
+    border-color: rgba(94, 234, 212, 0.9);
     box-shadow:
-      0 0 0 1px rgba(125, 211, 252, 0.24),
-      0 0 0 4px rgba(125, 211, 252, 0.12);
+      0 0 0 1px rgba(94, 234, 212, 0.2),
+      0 0 0 4px rgba(94, 234, 212, 0.12);
   }
 
   .input {
     @apply w-full rounded-2xl border px-4 py-3 text-sm text-slate-50 outline-none transition duration-200 placeholder:text-slate-500;
-    background: rgba(8, 15, 27, 0.8);
+    background: rgba(8, 17, 31, 0.76);
     border-color: rgba(148, 163, 184, 0.16);
   }
 
@@ -161,10 +175,10 @@ textarea {
   }
 
   .input:focus-visible {
-    border-color: rgba(125, 211, 252, 0.9);
+    border-color: rgba(94, 234, 212, 0.9);
     box-shadow:
-      0 0 0 1px rgba(125, 211, 252, 0.24),
-      0 0 0 4px rgba(125, 211, 252, 0.12);
+      0 0 0 1px rgba(94, 234, 212, 0.2),
+      0 0 0 4px rgba(94, 234, 212, 0.12);
   }
 
   .btn {
@@ -173,13 +187,13 @@ textarea {
 
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-white transition duration-200 focus-visible:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:opacity-60;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    box-shadow: 0 14px 28px rgba(37, 99, 235, 0.24);
+    background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+    box-shadow: 0 16px 32px rgba(37, 99, 235, 0.26);
   }
 
   .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 18px 34px rgba(37, 99, 235, 0.32);
+    box-shadow: 0 18px 36px rgba(37, 99, 235, 0.34);
   }
 
   .btn-success {
@@ -241,24 +255,70 @@ textarea {
     background: rgba(244, 63, 94, 0.16);
   }
 
+  .badge-info {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide;
+    color: #bfdbfe;
+    background: rgba(59, 130, 246, 0.18);
+  }
+
+  .badge-brand {
+    @apply inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold tracking-wide;
+    color: var(--brand);
+    background: rgba(125, 211, 252, 0.1);
+    border-color: rgba(125, 211, 252, 0.24);
+  }
+
   .empty-state {
     @apply rounded-[22px] border border-dashed px-6 py-10 text-center;
     border-color: rgba(148, 163, 184, 0.18);
-    background: rgba(8, 15, 27, 0.42);
+    background: rgba(8, 17, 31, 0.36);
   }
 
   .table-shell {
     @apply overflow-hidden rounded-[24px] border shadow-[var(--shadow-md)];
-    background: rgba(13, 24, 40, 0.9);
+    background: rgba(11, 23, 40, 0.88);
     border-color: rgba(148, 163, 184, 0.14);
   }
 
   .table-head {
-    background: rgba(18, 32, 54, 0.94);
+    background: rgba(15, 30, 51, 0.92);
   }
 
   .kbd-focus {
     @apply focus-visible:outline-none focus-visible:ring-4;
-    --tw-ring-color: rgba(125, 211, 252, 0.18);
+    --tw-ring-color: rgba(94, 234, 212, 0.18);
+  }
+
+  .scrollbar-subtle {
+    scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.22);
+    border-radius: 999px;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .status-easy {
+    color: #86efac;
+    background: rgba(34, 197, 94, 0.14);
+  }
+
+  .status-medium {
+    color: #fde68a;
+    background: rgba(245, 158, 11, 0.14);
+  }
+
+  .status-hard {
+    color: #fda4af;
+    background: rgba(244, 63, 94, 0.14);
   }
 }

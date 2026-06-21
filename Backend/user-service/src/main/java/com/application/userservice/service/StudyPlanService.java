@@ -262,7 +262,7 @@ public class StudyPlanService {
     @Transactional(readOnly = true)
     public ProgressSummaryResponse getProgressSummary(UUID userId) {
         List<UserStudyPlan> enrolledPlans = userStudyPlanRepository.findByUserIdOrderByEnrolledAtDesc(userId);
-        UserStudyPlan currentPlan = enrolledPlans.stream().findFirst().orElse(null);
+        UserStudyPlan currentPlan = resolveCurrentPlan(enrolledPlans);
 
         return ProgressSummaryResponse.builder()
                 .enrolledPlans(enrolledPlans.size())
@@ -280,10 +280,9 @@ public class StudyPlanService {
 
     @Transactional(readOnly = true)
     public StudyPlanNextItemView getCurrentNextItem(UUID userId) {
-        UserStudyPlan currentPlan = userStudyPlanRepository.findByUserIdOrderByEnrolledAtDesc(userId)
-                .stream()
-                .findFirst()
-                .orElse(null);
+        UserStudyPlan currentPlan = resolveCurrentPlan(
+                userStudyPlanRepository.findByUserIdOrderByEnrolledAtDesc(userId)
+        );
 
         if (currentPlan == null) {
             return null;
@@ -654,6 +653,14 @@ public class StudyPlanService {
                         .lastActivityDate(LocalDate.now())
                         .build())
         );
+    }
+
+    private UserStudyPlan resolveCurrentPlan(List<UserStudyPlan> enrolledPlans) {
+        return enrolledPlans.stream()
+                .filter(UserStudyPlan::isActive)
+                .findFirst()
+                .or(() -> enrolledPlans.stream().findFirst())
+                .orElse(null);
     }
 
     private double calculateCompletionPercentage(int totalItems, int completedItems) {

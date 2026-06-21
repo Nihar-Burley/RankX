@@ -1,19 +1,25 @@
+import PageHeader from "../components/PageHeader";
+import StatCard from "../components/StatCard";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+
 export default function Settings() {
   return (
     <div className="app-container space-y-6">
-      <header className="page-header">
-        <p className="eyebrow">Settings</p>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          Workspace preferences
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-          Keep the settings area visible and usable even before more backend-connected
-          preferences are introduced.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Settings"
+        title="Workspace preferences"
+        description="Keep the settings area visible and usable even before more backend-connected preferences are introduced."
+      >
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard label="Notifications" value="3 options" detail="Email and product communication controls" tone="cyan" />
+          <StatCard label="Default landing" value="Configurable" detail="Choose which area should open first" tone="violet" />
+          <StatCard label="Timezone" value="Saved locally" detail="Helpful until full backend preferences exist" tone="emerald" />
+        </div>
+      </PageHeader>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="surface-card">
+        <Card>
           <h2 className="section-title">Notifications</h2>
           <div className="mt-6 space-y-4">
             {[
@@ -29,14 +35,14 @@ export default function Settings() {
                 <input
                   type="checkbox"
                   defaultChecked={index === 0}
-                  className="h-4 w-4 rounded border-white/15 bg-slate-900 text-teal-400 focus:ring-teal-400"
+                  className="h-4 w-4 rounded border-white/15 bg-slate-900 text-sky-400 focus:ring-sky-400"
                 />
               </label>
             ))}
           </div>
-        </section>
+        </Card>
 
-        <section className="surface-card">
+        <Card>
           <h2 className="section-title">Experience</h2>
           <div className="mt-6 space-y-4">
             <div>
@@ -61,9 +67,9 @@ export default function Settings() {
               </select>
             </div>
 
-            <button className="btn-primary">Save preferences</button>
+            <Button>Save preferences</Button>
           </div>
-        </section>
+        </Card>
       </div>
     </div>
   );

@@ -2,15 +2,14 @@ export default function AuthLayout({ title, subtitle, children }) {
   return (
     <div className="min-h-screen bg-transparent px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl overflow-hidden rounded-[32px] border border-white/10 bg-slate-950/50 shadow-[0_28px_80px_rgba(2,8,23,0.45)] backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="relative hidden overflow-hidden border-r border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.18),_transparent_32%),linear-gradient(180deg,_rgba(9,18,31,0.98),_rgba(6,12,22,0.98))] p-10 text-slate-50 lg:flex lg:flex-col lg:justify-between xl:p-14">
+        <section className="relative hidden overflow-hidden border-r border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.18),_transparent_32%),radial-gradient(circle_at_80%_18%,_rgba(129,140,248,0.14),_transparent_28%),linear-gradient(180deg,_rgba(9,18,31,0.98),_rgba(6,12,22,0.98))] p-10 text-slate-50 lg:flex lg:flex-col lg:justify-between xl:p-14">
           <div>
             <div className="badge-neutral mb-6">RankX Admin</div>
             <h1 className="max-w-md text-4xl font-semibold tracking-tight xl:text-5xl">
               Operational control that feels clean, fast, and dependable.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-slate-300">
-              Manage quizzes, questions, and platform content with a sharper
-              control surface designed for trust and day-to-day efficiency.
+              Manage quizzes, questions, and platform content with a sharper control surface designed for trust and day-to-day efficiency.
             </p>
           </div>
 
@@ -34,10 +33,13 @@ export default function AuthLayout({ title, subtitle, children }) {
           <div className="w-full max-w-md">
             <div className="mb-8">
               <p className="eyebrow">Admin Access</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-                {title}
-              </h2>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">{title}</h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">{subtitle}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="badge-neutral">Restricted access</span>
+                <span className="badge-neutral">Operational workflows</span>
+                <span className="badge-neutral">Audit-friendly console</span>
+              </div>
             </div>
 
             <div className="surface-card">

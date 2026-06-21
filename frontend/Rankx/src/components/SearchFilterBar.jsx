@@ -1,6 +1,8 @@
+import Card from "./ui/Card";
+
 export default function SearchFilterBar({ searchProps, extraFilters }) {
   return (
-    <div className="surface-card flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <Card className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="w-full lg:max-w-md">
         <label htmlFor={searchProps.id || "search"} className="sr-only">
           {searchProps.label || "Search"}
@@ -13,6 +15,6 @@ export default function SearchFilterBar({ searchProps, extraFilters }) {
         />
       </div>
       {extraFilters ? <div className="flex flex-wrap gap-3">{extraFilters}</div> : null}
-    </div>
+    </Card>
   );
 }

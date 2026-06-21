@@ -17,11 +17,9 @@ import org.springframework.context.annotation.Configuration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 
 @Configuration
@@ -98,78 +96,166 @@ public class StudyPlanSeedData {
             List<ProblemCatalogItemView> problems,
             List<QuizCatalogItemView> quizzes
     ) {
-        Set<Long> usedProblemIds = new HashSet<>();
-        Set<UUID> usedQuizIds = new HashSet<>();
         List<StudyPlanTemplate> templates = new ArrayList<>();
 
-        ProblemCatalogItemView arraysProblem = selectProblem(problems, usedProblemIds, List.of("array", "string", "two pointer", "two-pointer"));
-        QuizCatalogItemView stringsQuiz = selectQuiz(quizzes, usedQuizIds, List.of("string", "javascript", "fundamental", "html"));
-        ProblemCatalogItemView twoPointerProblem = selectProblem(problems, usedProblemIds, List.of("two pointer", "two-pointer", "array"));
+        ProblemCatalogItemView twoSum = findProblemByTitle(problems, "Two Sum", "array", "hash");
+        ProblemCatalogItemView stock = findProblemByTitle(problems, "Best Time to Buy and Sell Stock", "array", "prefix");
+        ProblemCatalogItemView binarySearch = findProblemByTitle(problems, "Binary Search", "binary-search");
+        ProblemCatalogItemView validAnagram = findProblemByTitle(problems, "Valid Anagram", "string", "hash");
+        ProblemCatalogItemView kthLargest = findProblemByTitle(problems, "Kth Largest Element in an Array", "heap", "sorting");
+        ProblemCatalogItemView coinChange = findProblemByTitle(problems, "Coin Change", "dynamic-programming");
+        ProblemCatalogItemView validParentheses = findProblemByTitle(problems, "Valid Parentheses", "stack");
+        ProblemCatalogItemView mergeIntervals = findProblemByTitle(problems, "Merge Intervals", "intervals", "sorting");
+        ProblemCatalogItemView longestSubstring = findProblemByTitle(problems, "Longest Substring Without Repeating Characters", "sliding-window", "string");
+        ProblemCatalogItemView productExceptSelf = findProblemByTitle(problems, "Product of Array Except Self", "prefix-suffix", "array");
+        ProblemCatalogItemView numberOfIslands = findProblemByTitle(problems, "Number of Islands", "graph", "matrix");
+        ProblemCatalogItemView longestConsecutive = findProblemByTitle(problems, "Longest Consecutive Sequence", "set", "hash");
+        ProblemCatalogItemView topKFrequent = findProblemByTitle(problems, "Top K Frequent Elements", "heap", "hash");
+        ProblemCatalogItemView groupAnagrams = findProblemByTitle(problems, "Group Anagrams", "hash", "string");
+        ProblemCatalogItemView courseSchedule = findProblemByTitle(problems, "Course Schedule", "topological", "graph");
+        ProblemCatalogItemView rottingOranges = findProblemByTitle(problems, "Rotting Oranges", "matrix", "bfs");
+        ProblemCatalogItemView pacificAtlantic = findProblemByTitle(problems, "Pacific Atlantic Water Flow", "matrix", "graph");
+        ProblemCatalogItemView lruCache = findProblemByTitle(problems, "Implement LRU Cache", "cache", "design");
+        ProblemCatalogItemView mergeKLists = findProblemByTitle(problems, "Merge K Sorted Lists", "linked-list", "heap");
+        ProblemCatalogItemView reverseLinkedList = findProblemByTitle(problems, "Reverse Linked List", "linked-list");
+        ProblemCatalogItemView reorderList = findProblemByTitle(problems, "Reorder List", "linked-list");
+        ProblemCatalogItemView houseRobber = findProblemByTitle(problems, "House Robber", "dynamic-programming");
+
+        QuizCatalogItemView algorithmPatterns = findQuizByTitle(quizzes, "Algorithmic Pattern Recognition", "algorithm", "coding");
+        QuizCatalogItemView javaOop = findQuizByTitle(quizzes, "Java OOP and Collections", "java", "oop");
+        QuizCatalogItemView htmlQuiz = findQuizByTitle(quizzes, "HTML Semantics Essentials", "html", "frontend");
+        QuizCatalogItemView cssQuiz = findQuizByTitle(quizzes, "CSS Layout Foundations", "css", "frontend");
+        QuizCatalogItemView jsQuiz = findQuizByTitle(quizzes, "JavaScript Browser Basics", "javascript", "browser");
+        QuizCatalogItemView reactQuiz = findQuizByTitle(quizzes, "React State and Hooks", "react", "hooks");
+        QuizCatalogItemView sqlQuiz = findQuizByTitle(quizzes, "SQL Joins and Indexing", "sql", "database");
+        QuizCatalogItemView springQuiz = findQuizByTitle(quizzes, "Spring Boot APIs and Persistence", "spring", "backend");
+        QuizCatalogItemView securityQuiz = findQuizByTitle(quizzes, "Backend API Security", "security", "backend");
+        QuizCatalogItemView systemDesign = findQuizByTitle(quizzes, "System Design Fundamentals", "system", "design");
+        QuizCatalogItemView restApiQuiz = findQuizByTitle(quizzes, "REST API Design Essentials", "api", "backend");
+        QuizCatalogItemView dockerQuiz = findQuizByTitle(quizzes, "Docker and Container Basics", "docker", "platform");
+        QuizCatalogItemView redisQuiz = findQuizByTitle(quizzes, "Redis Caching and Session Storage", "redis", "cache");
+        QuizCatalogItemView graphQuiz = findQuizByTitle(quizzes, "Graph Traversal Patterns", "graph", "coding");
+        QuizCatalogItemView dpQuiz = findQuizByTitle(quizzes, "Dynamic Programming Basics", "dynamic", "coding");
+        QuizCatalogItemView observabilityQuiz = findQuizByTitle(quizzes, "Microservices Observability", "observability", "platform");
+
         addPlanIfPresent(templates, plan(
                 "dsa-basics",
                 "DSA Basics",
-                "Core arrays, strings, and two-pointer coding warmup.",
+                "Start with core interview mechanics across arrays, search, and pattern recognition.",
                 "Coding",
                 "Beginner",
-                seedProblem(1, "Arrays warmup", "Solve an introductory array problem.", arraysProblem, 20),
-                seedQuiz(2, "String fundamentals quiz", "Test basic string manipulation concepts.", stringsQuiz, 15),
-                seedProblem(3, "Two pointers intro", "Solve a beginner two-pointer challenge.", twoPointerProblem, 25)
+                seedProblem(1, "Arrays warmup", "Solve an introductory array lookup problem.", twoSum, 20),
+                seedQuiz(2, "Pattern checkpoint", "Recognize core algorithmic patterns before coding deeper.", algorithmPatterns, 18),
+                seedProblem(3, "Profit window drill", "Practice reasoning about local minima and maxima.", stock, 20),
+                seedProblem(4, "Binary search confidence", "Lock in the classic sorted-search workflow.", binarySearch, 25)
         ));
 
-        ProblemCatalogItemView javaCollectionsProblem = selectProblem(problems, usedProblemIds, List.of("java", "collection", "hash", "map"));
-        QuizCatalogItemView javaOopQuiz = selectQuiz(quizzes, usedQuizIds, List.of("java", "oop", "object", "collections"));
-        ProblemCatalogItemView javaStreamsProblem = selectProblem(problems, usedProblemIds, List.of("java", "stream", "loop", "iteration"));
         addPlanIfPresent(templates, plan(
                 "java-problem-solving",
                 "Java Problem Solving",
-                "Strengthen Java syntax and implementation confidence with guided practice.",
+                "Blend Java platform knowledge with high-signal coding exercises used in interviews.",
                 "Coding",
                 "Intermediate",
-                seedProblem(1, "Java collections challenge", "Implement a hash map based coding task.", javaCollectionsProblem, 30),
-                seedQuiz(2, "OOP concept checkpoint", "Review Java OOP concepts in a quiz.", javaOopQuiz, 15),
-                seedProblem(3, "Streams and loops drill", "Practice Java iteration and streams.", javaStreamsProblem, 25)
+                seedProblem(1, "Anagram frequency map", "Use counting structures cleanly and efficiently.", validAnagram, 20),
+                seedQuiz(2, "Java platform checkpoint", "Review OOP, collections, and API selection tradeoffs.", javaOop, 18),
+                seedProblem(3, "Heap-based ranking", "Use comparator-backed collections for ranked results.", kthLargest, 30),
+                seedProblem(4, "DP translation drill", "Turn a recurrence into an iterative Java solution.", coinChange, 35)
         ));
 
-        QuizCatalogItemView htmlQuiz = selectQuiz(quizzes, usedQuizIds, List.of("html", "semantic", "frontend", "css", "javascript"));
-        QuizCatalogItemView cssQuiz = selectQuiz(quizzes, usedQuizIds, List.of("css", "layout", "frontend", "grid", "flex"));
-        QuizCatalogItemView jsQuiz = selectQuiz(quizzes, usedQuizIds, List.of("javascript", "js", "frontend", "browser"));
         addPlanIfPresent(templates, plan(
                 "frontend-mcq-revision",
                 "Frontend MCQ Revision",
-                "Revise browser, HTML, CSS, and JavaScript concepts through quizzes.",
-                "Quiz",
+                "Revise the modern frontend stack through a clean progression from markup to React state.",
+                "Frontend",
                 "Beginner",
                 seedQuiz(1, "HTML and semantics", "Quick MCQ revision on semantic HTML.", htmlQuiz, 15),
                 seedQuiz(2, "CSS layouts", "Review flexbox and grid concepts.", cssQuiz, 15),
-                seedQuiz(3, "JavaScript basics", "Strengthen core JS concept recall.", jsQuiz, 20)
+                seedQuiz(3, "JavaScript basics", "Strengthen core JS concept recall.", jsQuiz, 20),
+                seedQuiz(4, "React state and hooks", "Connect browser fundamentals to component architecture.", reactQuiz, 20)
         ));
 
-        QuizCatalogItemView sqlQuiz = selectQuiz(quizzes, usedQuizIds, List.of("sql", "database", "backend"));
-        QuizCatalogItemView restQuiz = selectQuiz(quizzes, usedQuizIds, List.of("rest", "http", "backend", "api"));
-        QuizCatalogItemView springQuiz = selectQuiz(quizzes, usedQuizIds, List.of("spring", "backend", "java"));
         addPlanIfPresent(templates, plan(
                 "sql-backend-quiz-track",
                 "SQL + Backend Quiz Track",
-                "Refresh backend and database concepts with interview-style quizzes.",
-                "Quiz",
+                "Refresh backend and database concepts with a stronger service, persistence, and security arc.",
+                "Backend",
                 "Intermediate",
                 seedQuiz(1, "SQL joins and indexing", "Revise query optimization basics.", sqlQuiz, 20),
-                seedQuiz(2, "REST and HTTP", "Checkpoint on backend API fundamentals.", restQuiz, 15),
-                seedQuiz(3, "Spring backend concepts", "Review Spring and service design topics.", springQuiz, 20)
+                seedQuiz(2, "Spring data and APIs", "Review controller, service, JPA, and transaction design.", springQuiz, 20),
+                seedQuiz(3, "Backend API security", "Cover auth, secrets, and operational safety basics.", securityQuiz, 18),
+                seedQuiz(4, "System design grounding", "Tie the backend pieces together with systems thinking.", systemDesign, 22)
         ));
 
-        ProblemCatalogItemView interviewProblem = selectProblem(problems, usedProblemIds, List.of("graph", "dp", "tree", "interview", "array"));
-        QuizCatalogItemView systemQuiz = selectQuiz(quizzes, usedQuizIds, List.of("system", "design", "backend", "architecture"));
-        ProblemCatalogItemView backendProblem = selectProblem(problems, usedProblemIds, List.of("database", "sql", "backend", "java"));
+        addPlanIfPresent(templates, plan(
+                "algorithms-pattern-ladder",
+                "Algorithms Pattern Ladder",
+                "Climb through sliding windows, prefix products, graph traversal, and set-based reasoning.",
+                "Coding",
+                "Advanced",
+                seedProblem(1, "Sliding window mastery", "Practice maintaining a dynamic unique window.", longestSubstring, 30),
+                seedProblem(2, "Prefix product reasoning", "Use left and right passes without division.", productExceptSelf, 30),
+                seedProblem(3, "Grid traversal systems", "Apply graph traversal cleanly on matrix input.", numberOfIslands, 35),
+                seedProblem(4, "Hash-set sequence scan", "Spot the optimal O(n) boundary detection pattern.", longestConsecutive, 25)
+        ));
+
         addPlanIfPresent(templates, plan(
                 "mixed-interview-prep",
                 "Mixed Interview Prep",
-                "Blend coding drills and quizzes for broad interview readiness.",
-                "Both",
+                "Blend coding drills and architecture quizzes for broad interview readiness.",
+                "Interview",
                 "Advanced",
-                seedProblem(1, "Algorithm sprint", "Solve an interview-grade coding problem.", interviewProblem, 35),
-                seedQuiz(2, "System design concepts quiz", "Review architecture fundamentals in a quiz.", systemQuiz, 20),
-                seedProblem(3, "Database coding challenge", "Solve a backend-flavored coding task.", backendProblem, 30)
+                seedProblem(1, "Stack validity check", "Move quickly from symbols to stack invariants.", validParentheses, 20),
+                seedQuiz(2, "Pattern selection quiz", "Choose the best algorithm family before implementation.", algorithmPatterns, 20),
+                seedProblem(3, "Intervals under pressure", "Sort first, then merge with confidence.", mergeIntervals, 30),
+                seedQuiz(4, "System design concepts quiz", "Review scaling and distributed systems tradeoffs.", systemDesign, 22)
+        ));
+
+        addPlanIfPresent(templates, plan(
+                "graph-and-matrix-journey",
+                "Graph and Matrix Journey",
+                "Move from BFS fundamentals into graph cycles, ocean reachability, and traversal confidence.",
+                "Coding",
+                "Intermediate",
+                seedProblem(1, "Rotting oranges clock", "Use layer-by-layer BFS on a changing matrix.", rottingOranges, 25),
+                seedQuiz(2, "Graph traversal refresher", "Review BFS, DFS, and visited-state tradeoffs.", graphQuiz, 18),
+                seedProblem(3, "Course dependency check", "Reason about cycles before planning execution.", courseSchedule, 30),
+                seedProblem(4, "Ocean reachability", "Reverse the water-flow perspective and mark reachable cells.", pacificAtlantic, 35)
+        ));
+
+        addPlanIfPresent(templates, plan(
+                "linked-list-and-cache-track",
+                "Linked List and Cache Track",
+                "Combine classic pointer problems with foundational cache design and ranked merging.",
+                "Coding",
+                "Intermediate",
+                seedProblem(1, "Reverse the baseline list", "Build pointer confidence with a clean iterative reverse.", reverseLinkedList, 20),
+                seedProblem(2, "Reorder linked flow", "Split, reverse, and weave a list back together.", reorderList, 30),
+                seedProblem(3, "Design an LRU cache", "Model O(1) lookup plus recency ordering.", lruCache, 35),
+                seedProblem(4, "Merge many sorted lists", "Use a heap to keep the next smallest node visible.", mergeKLists, 35)
+        ));
+
+        addPlanIfPresent(templates, plan(
+                "backend-ops-foundations",
+                "Backend Ops Foundations",
+                "Strengthen API, container, cache, and observability instincts for production-facing services.",
+                "Backend",
+                "Intermediate",
+                seedQuiz(1, "REST API shape", "Choose better resource, status, and validation patterns.", restApiQuiz, 18),
+                seedQuiz(2, "Docker runtime thinking", "Understand image layering and runtime config separation.", dockerQuiz, 16),
+                seedQuiz(3, "Redis and sessions", "Use cache and session primitives with better operational judgment.", redisQuiz, 16),
+                seedQuiz(4, "Observability signals", "Read health, metrics, logs, and traces as one operating loop.", observabilityQuiz, 18)
+        ));
+
+        addPlanIfPresent(templates, plan(
+                "algorithmic-interview-sprint",
+                "Algorithmic Interview Sprint",
+                "Run a sharper interview lap through grouping, frequency, DP, and greedy reachability.",
+                "Interview",
+                "Advanced",
+                seedProblem(1, "Group related strings", "Recognize signature-based grouping quickly.", groupAnagrams, 25),
+                seedProblem(2, "Top frequent extraction", "Move from counts to ranked results efficiently.", topKFrequent, 25),
+                seedQuiz(3, "Dynamic programming basics", "Check whether states and transitions feel obvious yet.", dpQuiz, 18),
+                seedProblem(4, "House and jump decisions", "Switch between DP and greedy reasoning under pressure.", houseRobber, 25)
         ));
 
         return templates;
@@ -181,41 +267,27 @@ public class StudyPlanSeedData {
         }
     }
 
-    private ProblemCatalogItemView selectProblem(
+    private ProblemCatalogItemView findProblemByTitle(
             List<ProblemCatalogItemView> problems,
-            Set<Long> usedProblemIds,
-            List<String> keywords
+            String title,
+            String... fallbackKeywords
     ) {
         return problems.stream()
-                .filter(problem -> !usedProblemIds.contains(problem.getId()))
-                .filter(problem -> matchesProblem(problem, keywords))
+                .filter(problem -> problem.getTitle() != null && problem.getTitle().equalsIgnoreCase(title))
                 .findFirst()
-                .or(() -> problems.stream().filter(problem -> !usedProblemIds.contains(problem.getId())).findFirst())
-                .or(() -> problems.stream().filter(problem -> matchesProblem(problem, keywords)).findFirst())
-                .or(() -> problems.stream().findFirst())
-                .map(problem -> {
-                    usedProblemIds.add(problem.getId());
-                    return problem;
-                })
+                .or(() -> problems.stream().filter(problem -> matchesProblem(problem, List.of(fallbackKeywords))).findFirst())
                 .orElse(null);
     }
 
-    private QuizCatalogItemView selectQuiz(
+    private QuizCatalogItemView findQuizByTitle(
             List<QuizCatalogItemView> quizzes,
-            Set<UUID> usedQuizIds,
-            List<String> keywords
+            String title,
+            String... fallbackKeywords
     ) {
         return quizzes.stream()
-                .filter(quiz -> !usedQuizIds.contains(quiz.getId()))
-                .filter(quiz -> matchesQuiz(quiz, keywords))
+                .filter(quiz -> quiz.getTitle() != null && quiz.getTitle().equalsIgnoreCase(title))
                 .findFirst()
-                .or(() -> quizzes.stream().filter(quiz -> !usedQuizIds.contains(quiz.getId())).findFirst())
-                .or(() -> quizzes.stream().filter(quiz -> matchesQuiz(quiz, keywords)).findFirst())
-                .or(() -> quizzes.stream().findFirst())
-                .map(quiz -> {
-                    usedQuizIds.add(quiz.getId());
-                    return quiz;
-                })
+                .or(() -> quizzes.stream().filter(quiz -> matchesQuiz(quiz, List.of(fallbackKeywords))).findFirst())
                 .orElse(null);
     }
 
