@@ -5,9 +5,12 @@ import EmptyState from "../components/EmptyState";
 import ErrorState from "../components/ErrorState";
 import LoadingState from "../components/LoadingState";
 import PageHeader from "../components/PageHeader";
+import PageSection from "../components/PageSection";
 import RecommendedActionCard from "../components/RecommendedActionCard";
 import RecommendationCardsSection from "../components/RecommendationCardsSection";
 import StatCard from "../components/StatCard";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
 import { logoutUser } from "../services/authService";
 import { getMyAnalytics, normalizeRecommendation } from "../services/userApi";
 import { trackProductEvent } from "../utils/eventTracker";
@@ -101,12 +104,12 @@ export default function Analytics() {
         description="Understand what is working, where you are losing momentum, and which topic or study action is most worth your time next."
         actions={
           <>
-            <button type="button" onClick={() => navigate("/my-progress")} className="btn-secondary">
+            <Button type="button" variant="secondary" onClick={() => navigate("/my-progress")}>
               Open progress
-            </button>
-            <button type="button" onClick={() => navigate("/home")} className="btn-primary">
+            </Button>
+            <Button type="button" onClick={() => navigate("/home")}>
               Back to dashboard
-            </button>
+            </Button>
           </>
         }
       >
@@ -157,13 +160,12 @@ export default function Analytics() {
       )}
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <h2 className="text-xl font-semibold text-white">Coding strengths and gaps</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-400">
-            These signals come from your real submission history, not manually marked frontend state.
-          </p>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <div>
+        <PageSection
+          title="Coding strengths and gaps"
+          description="These signals come from your real submission history, not manually marked frontend state."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card variant="soft">
               <p className="text-sm uppercase tracking-[0.18em] text-emerald-400">Strong topics</p>
               <div className="mt-3 space-y-3">
                 {(coding?.strongTopics || []).length === 0 ? (
@@ -177,8 +179,8 @@ export default function Analytics() {
                   ))
                 )}
               </div>
-            </div>
-            <div>
+            </Card>
+            <Card variant="soft">
               <p className="text-sm uppercase tracking-[0.18em] text-rose-400">Weak topics</p>
               <div className="mt-3 space-y-3">
                 {(coding?.weakTopics || []).length === 0 ? (
@@ -192,17 +194,16 @@ export default function Analytics() {
                   ))
                 )}
               </div>
-            </div>
+            </Card>
           </div>
-        </div>
+        </PageSection>
 
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <h2 className="text-xl font-semibold text-white">Quiz strengths and gaps</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-400">
-            Quiz insights are calculated from completed and evaluated quiz attempts.
-          </p>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <div>
+        <PageSection
+          title="Quiz strengths and gaps"
+          description="Quiz insights are calculated from completed and evaluated quiz attempts."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card variant="soft">
               <p className="text-sm uppercase tracking-[0.18em] text-emerald-400">Strong topics</p>
               <div className="mt-3 space-y-3">
                 {(quiz?.strongTopics || []).length === 0 ? (
@@ -216,8 +217,8 @@ export default function Analytics() {
                   ))
                 )}
               </div>
-            </div>
-            <div>
+            </Card>
+            <Card variant="soft">
               <p className="text-sm uppercase tracking-[0.18em] text-rose-400">Weak topics</p>
               <div className="mt-3 space-y-3">
                 {(quiz?.weakTopics || []).length === 0 ? (
@@ -231,9 +232,9 @@ export default function Analytics() {
                   ))
                 )}
               </div>
-            </div>
+            </Card>
           </div>
-        </div>
+        </PageSection>
       </section>
     </div>
   );

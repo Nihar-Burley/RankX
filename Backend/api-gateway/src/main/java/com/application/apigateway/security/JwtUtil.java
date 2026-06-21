@@ -12,13 +12,11 @@ import java.security.Key;
 @Component
 public class JwtUtil {
 
-    @Value("${security.jwt.secret:n7m4FJw9K9JH6v0K+K4F4A7Q9KJZ9JH1L4v9F2Q1G8E=}")
+    @Value("${security.jwt.secret}")
     private String secret;
 
     private Key getKey() {
-        return Keys.hmacShaKeyFor(
-                Decoders.BASE64.decode(secret)
-        );
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
 
     public Claims extractClaims(String token) {
@@ -29,14 +27,12 @@ public class JwtUtil {
                 .getBody();
     }
 
-
     public boolean isTokenValid(String token) {
         try {
             extractClaims(token);
             return true;
-        } catch (Exception e) {
+        } catch (Exception exception) {
             return false;
         }
     }
 }
-

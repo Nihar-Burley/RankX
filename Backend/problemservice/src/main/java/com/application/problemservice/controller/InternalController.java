@@ -31,6 +31,11 @@ public class InternalController {
         return problemService.getProblemMetadata(id);
     }
 
+    @GetMapping("/{id}")
+    public ProblemResponse getProblemById(@PathVariable Long id) {
+        return problemService.getProblemById(id);
+    }
+
     @GetMapping("/active")
     public List<ProblemResponse> getActiveProblems() {
         return problemService.getActiveProblems();

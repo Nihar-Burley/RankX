@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import AuthInput from "../components/AuthInput";
+import Button from "../components/ui/Button";
 import { loginApi } from "../services/authService";
 import { getRoleFromToken } from "../utils/jwtUtils";
 
@@ -50,7 +51,7 @@ export default function Login() {
   return (
     <AuthLayout
       title="Welcome back"
-      subtitle="Sign in to access the RankX administration workspace."
+      subtitle="Sign in to access the RankX administration workspace for content, analytics, and platform operations."
     >
       <form onSubmit={handleLogin} className="space-y-5">
         <AuthInput
@@ -78,9 +79,9 @@ export default function Login() {
           </div>
         ) : null}
 
-        <button type="submit" disabled={loading} className="btn-primary w-full">
+        <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Logging in..." : "Login"}
-        </button>
+        </Button>
       </form>
     </AuthLayout>
   );

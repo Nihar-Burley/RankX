@@ -1,6 +1,7 @@
 package com.application.apigateway.security;
 
 import io.jsonwebtoken.Claims;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
@@ -12,7 +13,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
-
+@Slf4j
 @Component
 public class JwtAuthFilter implements GatewayFilter {
 
@@ -28,6 +29,7 @@ public class JwtAuthFilter implements GatewayFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
+        log.info("Incoming request: path={}", path);
 
         if (path.startsWith("/api/auth")) {
             return chain.filter(exchange);
@@ -40,13 +42,18 @@ public class JwtAuthFilter implements GatewayFilter {
         String authHeader = exchange.getRequest()
                 .getHeaders()
                 .getFirst(HttpHeaders.AUTHORIZATION);
+        log.info("Authorization header = {}", authHeader);
 
         if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
+            log.info("Missing or invalid Authorization header for path={}", path);
             return unauthorized(exchange, "Missing or invalid Authorization header");
         }
 
         String token = authHeader.substring(7);
+        log.info("Extracted JWT token = {}", token);
+        log.info("Validating token...");
         if (!jwtUtil.isTokenValid(token)) {
+            log.info("Invalid JWT token received for path={}", path);
             return unauthorized(exchange, "Invalid token");
         }
 
@@ -58,6 +65,7 @@ public class JwtAuthFilter implements GatewayFilter {
             return unauthorized(exchange, "Token is missing required claims");
         }
 
+        log.info("Injecting headers -> X-User-Id={}, X-Role={}", userId, role);
         ServerWebExchange mutatedExchange = exchange.mutate()
                 .request(request -> request.headers(headers -> {
                     headers.set(HEADER_USER_ID, userId);

@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
+import Badge from "./ui/Badge";
+import Button from "./ui/Button";
+import Card from "./ui/Card";
 import api from "../services/api";
 import { emitProgressUpdated } from "../utils/progressSync";
 import { trackProductEvent } from "../utils/eventTracker";
 
-const PRIMARY_TABS = ["question", "solution", "submissions", "notes"];
+const PRIMARY_TABS = [{ key: "question", label: "Problem" }];
 const DRAWER_TABS = ["testcase", "output", "custom"];
 
 const difficultyBadgeClass = {
@@ -37,7 +40,7 @@ export default function ProblemWorkspace({ problem }) {
     };
   }, [problem]);
 
-  const [activeTab, setActiveTab] = useState("question");
+  const [activeTab, setActiveTab] = useState(PRIMARY_TABS[0].key);
   const [languageKey, setLanguageKey] = useState(initialWorkspace.defaultLanguage.languageKey);
   const [editorLanguage, setEditorLanguage] = useState(initialWorkspace.defaultLanguage.editorMode);
   const [code, setCode] = useState(initialWorkspace.defaultCode);
@@ -85,14 +88,27 @@ export default function ProblemWorkspace({ problem }) {
     [problems, search]
   );
 
+  const currentProblemIndex = useMemo(
+    () => problems.findIndex((item) => item.id === problem.id),
+    [problems, problem.id]
+  );
+
+  const previousProblem = currentProblemIndex > 0 ? problems[currentProblemIndex - 1] : null;
+  const nextProblem =
+    currentProblemIndex >= 0 && currentProblemIndex < problems.length - 1
+      ? problems[currentProblemIndex + 1]
+      : null;
+
   const goPrev = () => {
-    if (problem.id > 1) {
-      navigate(`/problems/${problem.id - 1}`);
+    if (previousProblem) {
+      navigate(`/problems/${previousProblem.id}`);
     }
   };
 
   const goNext = () => {
-    navigate(`/problems/${problem.id + 1}`);
+    if (nextProblem) {
+      navigate(`/problems/${nextProblem.id}`);
+    }
   };
 
   const toggleFullscreen = () => {
@@ -201,18 +217,18 @@ export default function ProblemWorkspace({ problem }) {
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <div className="surface-card-soft">
+        <Card variant="soft">
           <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">Constraints</h3>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
             {problem.constraints || "No constraints provided."}
           </p>
-        </div>
-        <div className="surface-card-soft">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">What to do next</h3>
-          <p className="mt-3 text-sm leading-6 text-slate-300">
-            Review the prompt, pick a language, run the sample cases, then submit once the output matches.
+        </Card>
+        <Card variant="soft">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">Approach notes</h3>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
+            {problem.editorial || "Review the prompt, validate your approach against the sample cases, then submit once the output matches."}
           </p>
-        </div>
+        </Card>
       </div>
     </>
   );
@@ -223,15 +239,15 @@ export default function ProblemWorkspace({ problem }) {
         <header className="border-b border-white/10 bg-slate-950/70 px-4 py-3 backdrop-blur-xl sm:px-6">
           <div className="mx-auto flex max-w-[1600px] flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <button type="button" onClick={() => setSidebarOpen(true)} className="btn-secondary px-3" aria-label="Open problem navigator">
+              <Button type="button" variant="secondary" className="px-3" onClick={() => setSidebarOpen(true)} aria-label="Open problem navigator">
                 Problems
-              </button>
-              <button type="button" onClick={goPrev} className="btn-ghost px-3">
+              </Button>
+              <Button type="button" variant="ghost" className="px-3" onClick={goPrev} disabled={!previousProblem}>
                 Prev
-              </button>
-              <button type="button" onClick={goNext} className="btn-ghost px-3">
+              </Button>
+              <Button type="button" variant="ghost" className="px-3" onClick={goNext} disabled={!nextProblem}>
                 Next
-              </button>
+              </Button>
               <div className="ml-0 lg:ml-3">
                 <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Practice workspace</p>
                 <p className="text-sm font-medium text-white sm:text-base">{problem.title}</p>
@@ -239,53 +255,43 @@ export default function ProblemWorkspace({ problem }) {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <button type="button" onClick={() => setIsDark((value) => !value)} className="btn-secondary">
+              <Badge tone="brand">{problem.languages.length} languages</Badge>
+              <Button type="button" variant="secondary" onClick={() => setIsDark((value) => !value)}>
                 {isDark ? "Light editor" : "Dark editor"}
-              </button>
-              <button type="button" onClick={toggleFullscreen} className="btn-secondary">
+              </Button>
+              <Button type="button" variant="secondary" onClick={toggleFullscreen}>
                 Fullscreen
-              </button>
+              </Button>
             </div>
           </div>
         </header>
       ) : null}
 
       <main className="mx-auto flex max-w-[1600px] flex-col gap-4 px-3 py-3 sm:px-4 lg:h-[calc(100vh-80px)] lg:flex-row lg:gap-0 lg:px-6 lg:py-5">
-        <section className="surface-card flex min-h-[360px] flex-col lg:mr-4 lg:w-[44%] lg:min-h-0">
-          <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
-            {PRIMARY_TABS.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`rounded-full px-4 py-2 text-sm font-medium capitalize transition ${
-                  activeTab === tab
-                    ? "bg-teal-400/14 text-teal-200 ring-1 ring-teal-300/25"
+        <Card className="flex min-h-[360px] flex-col lg:mr-4 lg:w-[44%] lg:min-h-0">
+            <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
+              {PRIMARY_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium capitalize transition ${
+                  activeTab === tab.key
+                    ? "bg-sky-400/14 text-sky-200 ring-1 ring-sky-300/25"
                     : "text-slate-400 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                {tab}
+                {tab.label}
               </button>
             ))}
           </div>
 
           <div className="scrollbar-subtle mt-5 flex-1 overflow-y-auto pr-1">
-            {activeTab === "question" ? (
-              renderQuestionPanel()
-            ) : (
-              <div className="empty-state">
-                <p className="text-base font-medium text-white">
-                  {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} coming soon
-                </p>
-                <p className="mt-2 text-sm text-slate-400">
-                  This tab is preserved in the workflow and ready for future content.
-                </p>
-              </div>
-            )}
+            {activeTab === "question" ? renderQuestionPanel() : null}
           </div>
-        </section>
+        </Card>
 
-        <section className="surface-card relative flex min-h-[520px] flex-1 flex-col p-0 lg:min-h-0">
+        <Card className="relative flex min-h-[520px] flex-1 flex-col p-0 lg:min-h-0">
           <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-3">
               <label htmlFor="language-select" className="sr-only">
@@ -309,16 +315,16 @@ export default function ProblemWorkspace({ problem }) {
                   </option>
                 ))}
               </select>
-              <span className="badge-neutral font-mono text-[11px]">{editorLanguage}</span>
+              <Badge tone="neutral" className="font-mono text-[11px]">{editorLanguage}</Badge>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <button type="button" onClick={() => setCode(initialWorkspace.starterMap[languageKey] || "")} className="btn-secondary">
+              <Button type="button" variant="secondary" onClick={() => setCode(initialWorkspace.starterMap[languageKey] || "")}>
                 Reset code
-              </button>
-              <button type="button" onClick={toggleFullscreen} className="btn-ghost">
+              </Button>
+              <Button type="button" variant="ghost" onClick={toggleFullscreen}>
                 {isFullscreen ? "Exit fullscreen" : "Expand"}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -357,7 +363,7 @@ export default function ProblemWorkspace({ problem }) {
                     onClick={() => setTestTab(tab)}
                     className={`rounded-full px-4 py-2 text-sm font-medium capitalize transition ${
                       testTab === tab
-                        ? "bg-teal-400/14 text-teal-200 ring-1 ring-teal-300/25"
+                        ? "bg-sky-400/14 text-sky-200 ring-1 ring-sky-300/25"
                         : "text-slate-400 hover:bg-white/5 hover:text-white"
                     }`}
                   >
@@ -437,9 +443,9 @@ export default function ProblemWorkspace({ problem }) {
                       />
                     </div>
                     <div className="flex justify-end">
-                      <button type="button" onClick={handleRun} className="btn-primary">
+                      <Button type="button" onClick={handleRun}>
                         Run custom input
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : null}
@@ -448,20 +454,20 @@ export default function ProblemWorkspace({ problem }) {
           </div>
 
           <div className="relative z-30 flex flex-col gap-3 border-t border-white/10 bg-slate-950/94 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <button type="button" onClick={() => setShowConsole((value) => !value)} className="btn-secondary">
+            <Button type="button" variant="secondary" onClick={() => setShowConsole((value) => !value)}>
               {showConsole ? "Hide results" : "Show test cases"}
-            </button>
+            </Button>
 
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={handleRun} className="btn-secondary">
+              <Button type="button" variant="secondary" onClick={handleRun}>
                 Run
-              </button>
-              <button type="button" onClick={handleSubmit} className="btn-primary">
+              </Button>
+              <Button type="button" onClick={handleSubmit}>
                 Submit
-              </button>
+              </Button>
             </div>
           </div>
-        </section>
+        </Card>
       </main>
 
       {sidebarOpen ? (
@@ -479,9 +485,9 @@ export default function ProblemWorkspace({ problem }) {
                 <p className="eyebrow">Navigator</p>
                 <h2 className="mt-2 text-lg font-semibold text-white">Problems</h2>
               </div>
-              <button type="button" onClick={() => setSidebarOpen(false)} className="btn-ghost">
+              <Button type="button" variant="ghost" onClick={() => setSidebarOpen(false)}>
                 Close
-              </button>
+              </Button>
             </div>
 
             <div className="border-b border-white/10 px-5 py-4">
@@ -508,7 +514,7 @@ export default function ProblemWorkspace({ problem }) {
                   }}
                   className={`mb-2 flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition ${
                     item.id === problem.id
-                      ? "border-teal-300/25 bg-teal-400/10 text-white"
+                      ? "border-sky-300/25 bg-sky-400/10 text-white"
                       : "border-white/6 bg-white/[0.02] text-slate-300 hover:border-white/10 hover:bg-white/[0.04]"
                   }`}
                 >

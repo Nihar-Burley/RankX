@@ -86,6 +86,7 @@ public class AuthService {
                 repo.findByUsername(req.getUsername())
                         .orElseThrow();
 
+        log.info("Requested AuthUsers={}", user);
         if (!user.isEnabled())
             throw new RuntimeException("OTP not verified");
 

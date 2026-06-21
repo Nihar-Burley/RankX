@@ -1,3 +1,5 @@
+import { cn } from "../lib/cn";
+
 export default function PageHeader({
   eyebrow,
   title,
@@ -7,7 +9,7 @@ export default function PageHeader({
   className = "",
 }) {
   return (
-    <header className={`page-header ${className}`.trim()}>
+    <header className={cn("page-header", className)}>
       {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
       <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>

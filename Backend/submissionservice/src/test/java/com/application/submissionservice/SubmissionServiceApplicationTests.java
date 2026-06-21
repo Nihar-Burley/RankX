@@ -12,7 +12,6 @@ import com.application.submissionservice.judge.Judge0Client;
 		"spring.cloud.config.enabled=false",
 		"spring.cloud.discovery.enabled=false",
 		"eureka.client.enabled=false",
-		"problem.service.url=localhost:8080",
 		"spring.datasource.url=jdbc:h2:mem:submissionservice;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
 		"spring.datasource.driverClassName=org.h2.Driver",
 		"spring.datasource.username=sa",

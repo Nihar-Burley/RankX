@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import ErrorState from "../../components/ErrorState";
+import LoadingState from "../../components/LoadingState";
+import PageHeader from "../../components/PageHeader";
+import StatCard from "../../components/StatCard";
+import Badge from "../../components/ui/Badge";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import Dialog from "../../components/ui/Dialog";
 import { saveAnswer, startAttempt, submitAttempt } from "../../services/attemptApi";
 import { getQuestionsByQuiz } from "../../services/questionApi";
 import { trackProductEvent } from "../../utils/eventTracker";
@@ -23,20 +31,29 @@ const normalizeOptions = (options = []) =>
     }))
   );
 
-const buttonTone = {
-  current: "bg-indigo-600 scale-110",
-  review: "bg-purple-600",
-  answered: "bg-green-600",
-  pending: "bg-gray-700",
-};
-
 const formatTime = (timeLeft) => {
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
-const QuizAttempt = () => {
+const getQuestionTone = ({ isCurrent, isReview, answered }) => {
+  if (isCurrent) {
+    return "bg-sky-500 text-white ring-2 ring-sky-200/40";
+  }
+
+  if (isReview) {
+    return "bg-violet-500/18 text-violet-100";
+  }
+
+  if (answered) {
+    return "bg-emerald-500/18 text-emerald-100";
+  }
+
+  return "bg-slate-900/90 text-slate-400";
+};
+
+export default function QuizAttempt() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const attemptStartedRef = useRef(false);
@@ -48,7 +65,7 @@ const QuizAttempt = () => {
   const [reviewed, setReviewed] = useState({});
   const [timeLeft, setTimeLeft] = useState(15 * 60);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [savingQuestionId, setSavingQuestionId] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -151,6 +168,7 @@ const QuizAttempt = () => {
         setShowTabWarning(true);
       }
     };
+
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [showTabWarning]);
@@ -204,16 +222,30 @@ const QuizAttempt = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center text-white">
-        Loading quiz...
+      <div className="app-shell">
+        <LoadingState
+          title="Loading quiz session"
+          description="Preparing your questions, timer, and attempt workspace."
+        />
       </div>
     );
   }
 
   if (error && !questions.length) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center text-red-400">
-        {error}
+      <div className="app-shell">
+        <ErrorState
+          title="Quiz attempt unavailable"
+          message={error}
+          action={
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={() => navigate("/quiz")}>Back to quizzes</Button>
+              <Button variant="secondary" onClick={() => window.location.reload()}>
+                Try again
+              </Button>
+            </div>
+          }
+        />
       </div>
     );
   }
@@ -224,172 +256,208 @@ const QuizAttempt = () => {
 
   const question = questions[current];
   const selected = answers[question.id]?.optionText;
+  const answeredCount = Object.keys(answers).length;
+  const reviewCount = Object.values(reviewed).filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(135deg,#020617,#0f172a)] px-4 py-8 text-white">
-      {showTabWarning ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="max-w-sm rounded-3xl bg-[#0f172a] p-6 text-center">
-            <h3 className="text-lg font-semibold">Tab switch detected</h3>
-            <p className="mt-3 text-gray-300">
-              Violations: <span className="font-bold text-red-400">{tabSwitchCount}</span>
-            </p>
-            <button type="button" onClick={() => setShowTabWarning(false)} className="mt-5 rounded-xl bg-indigo-600 px-6 py-2">
-              Continue exam
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {showConfirm ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="max-w-md rounded-3xl bg-[#0f172a] p-6 text-center">
-            <h3 className="text-xl font-semibold">Unanswered questions</h3>
-            <p className="mt-3 text-gray-300">
-              You still have <span className="font-bold text-red-400">{unansweredCount}</span> unanswered question(s).
-            </p>
-            <div className="mt-6 flex justify-center gap-4">
-              <button type="button" onClick={() => setShowConfirm(false)} className="rounded-xl bg-gray-700 px-6 py-2">
-                Go back
-              </button>
-              <button type="button" onClick={handleFinalSubmit} disabled={submitting} className="rounded-xl bg-red-600 px-6 py-2 disabled:opacity-60">
-                {submitting ? "Submitting..." : "Submit anyway"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="mx-auto max-w-5xl rounded-[32px] border border-white/10 bg-[#0f172a]/92 p-6 shadow-2xl">
-        {error ? (
-          <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            {error}
-          </div>
-        ) : null}
-
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-indigo-300">Quiz session</p>
-            <h1 className="mt-3 text-3xl font-semibold">Stay focused and finish cleanly</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-              Answer carefully, mark uncertain questions for review, and use the palette to see what is done versus what still needs attention.
-            </p>
-          </div>
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-4 text-right">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Time remaining</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{formatTime(timeLeft)}</p>
-          </div>
-        </div>
-
-        <div className="mb-4 flex justify-center gap-4 text-xs text-gray-300">
-          <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-indigo-600" /> Current
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-green-600" /> Answered
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-purple-600" /> Review
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="h-3 w-3 rounded-full bg-gray-700" /> Pending
-          </span>
-        </div>
-
-        <div className="mb-6 flex flex-wrap justify-center gap-3">
-          {questions.map((item, index) => {
-            const answered = Boolean(answers[item.id]);
-            const isReview = reviewed[item.id];
-            const isCurrent = index === current;
-            const tone = isCurrent
-              ? buttonTone.current
-              : isReview
-                ? buttonTone.review
-                : answered
-                  ? buttonTone.answered
-                  : buttonTone.pending;
-
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setCurrent(index)}
-                className={`h-10 w-10 rounded-full font-semibold transition ${tone}`}
-              >
-                {index + 1}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mb-4 flex justify-between">
-          <span className="text-gray-400">
-            Question {current + 1} / {questions.length}
-          </span>
-          <span className="rounded-full bg-slate-800 px-4 py-1 text-sm text-slate-200">
-            {unansweredCount} unanswered
-          </span>
-        </div>
-
-        <h2 className="mb-6 text-xl font-semibold">{question.questionText}</h2>
-
-        <div className="mb-6 space-y-4">
-          {question.options.map((option, index) => (
-            <button
-              key={`${question.id}-${option.key}-${option.text}`}
-              type="button"
-              onClick={() => handleOptionSelect(option)}
-              disabled={savingQuestionId === question.id || submitting}
-              className={`flex w-full gap-4 rounded-2xl p-4 text-left transition ${
-                selected === option.text ? "bg-indigo-600" : "bg-[#020617] hover:bg-indigo-700"
-              } disabled:cursor-not-allowed disabled:opacity-70`}
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/40 font-bold">
-                {option.key || optionLabels[index]}
-              </div>
-              <span>{option.text}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={toggleReview}
-            className={`rounded-xl px-4 py-2 ${reviewed[question.id] ? "bg-purple-600" : "bg-gray-700"}`}
-          >
-            {reviewed[question.id] ? "Unmark review" : "Mark for review"}
-          </button>
-
-          <div className="flex gap-4">
-            <button
-              type="button"
-              onClick={() => setCurrent((value) => Math.max(0, value - 1))}
-              disabled={current === 0}
-              className="rounded-xl bg-gray-700 px-4 py-2 disabled:opacity-40"
-            >
-              Previous
-            </button>
-
-            {current === questions.length - 1 ? (
-              <button
-                type="button"
+    <div className="app-shell">
+      <div className="app-container space-y-6">
+        <PageHeader
+          eyebrow="Quiz Session"
+          title="Stay focused and finish cleanly"
+          description="Answer carefully, mark uncertain questions for review, and use the palette to keep the session easy to manage."
+          actions={
+            <>
+              <Badge tone="brand">Attempt #{attemptId}</Badge>
+              <Button
+                variant="secondary"
                 onClick={() => (unansweredCount > 0 ? setShowConfirm(true) : handleFinalSubmit())}
                 disabled={submitting}
-                className="rounded-xl bg-green-600 px-6 py-2 font-semibold disabled:opacity-60"
               >
-                {submitting ? "Submitting..." : "Submit"}
-              </button>
-            ) : (
-              <button type="button" onClick={() => setCurrent((value) => value + 1)} className="rounded-xl bg-indigo-600 px-4 py-2 font-semibold">
-                Next
-              </button>
-            )}
+                {submitting ? "Submitting..." : "Submit attempt"}
+              </Button>
+            </>
+          }
+        >
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="Time remaining" value={formatTime(timeLeft)} detail="Auto-submits when time runs out" tone="cyan" />
+            <StatCard label="Answered" value={answeredCount} detail={`${questions.length} total questions`} tone="emerald" />
+            <StatCard label="Pending" value={unansweredCount} detail="Questions still needing an answer" tone="amber" />
+            <StatCard label="Marked for review" value={reviewCount} detail="Use this to revisit uncertain questions" tone="violet" />
+          </div>
+        </PageHeader>
+
+        {error ? (
+          <ErrorState
+            title="We hit a save issue"
+            message={error}
+            action={
+              <Button variant="secondary" onClick={() => setError("")}>
+                Dismiss
+              </Button>
+            }
+          />
+        ) : null}
+
+        <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+          <Card className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                  Question {current + 1} of {questions.length}
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">
+                  {question.questionText}
+                </h2>
+              </div>
+              <Badge tone={reviewed[question.id] ? "warning" : "neutral"}>
+                {reviewed[question.id] ? "Review later" : "In progress"}
+              </Badge>
+            </div>
+
+            <div className="space-y-3">
+              {question.options.map((option, index) => {
+                const isSelected = selected === option.text;
+                return (
+                  <button
+                    key={`${question.id}-${option.key}-${option.text}`}
+                    type="button"
+                    onClick={() => handleOptionSelect(option)}
+                    disabled={savingQuestionId === question.id || submitting}
+                    className={`w-full rounded-[22px] border px-4 py-4 text-left transition ${
+                      isSelected
+                        ? "border-sky-300/35 bg-sky-400/12 shadow-[0_18px_34px_rgba(37,99,235,0.18)]"
+                        : "border-white/10 bg-slate-950/55 hover:border-white/16 hover:bg-white/[0.04]"
+                    } disabled:cursor-not-allowed disabled:opacity-70`}
+                  >
+                    <div className="flex gap-4">
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold ${
+                          isSelected ? "bg-sky-500 text-white" : "bg-white/[0.06] text-slate-300"
+                        }`}
+                      >
+                        {option.key || optionLabels[index]}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium text-white">{option.text}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {isSelected ? "Selected answer" : "Click to choose this option"}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <Button
+                variant={reviewed[question.id] ? "secondary" : "ghost"}
+                onClick={toggleReview}
+              >
+                {reviewed[question.id] ? "Unmark review" : "Mark for review"}
+              </Button>
+
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setCurrent((value) => Math.max(0, value - 1))}
+                  disabled={current === 0}
+                >
+                  Previous
+                </Button>
+                {current === questions.length - 1 ? (
+                  <Button
+                    variant="success"
+                    onClick={() => (unansweredCount > 0 ? setShowConfirm(true) : handleFinalSubmit())}
+                    disabled={submitting}
+                  >
+                    {submitting ? "Submitting..." : "Finish attempt"}
+                  </Button>
+                ) : (
+                  <Button onClick={() => setCurrent((value) => value + 1)}>Next question</Button>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          <div className="space-y-6">
+            <Card variant="soft">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Question palette</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                Blue is current, green is answered, violet is marked for review, and muted means still pending.
+              </p>
+              <div className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-6 xl:grid-cols-5">
+                {questions.map((item, index) => {
+                  const answered = Boolean(answers[item.id]);
+                  const isReview = reviewed[item.id];
+                  const isCurrent = index === current;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setCurrent(index)}
+                      className={`h-11 rounded-2xl text-sm font-semibold transition ${getQuestionTone({
+                        isCurrent,
+                        isReview,
+                        answered,
+                      })}`}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </Card>
+
+            <Card variant="soft">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Session guidance</p>
+              <div className="mt-3 space-y-3 text-sm leading-6 text-slate-400">
+                <p>Keep moving if you are unsure and use review markers to return later.</p>
+                <p>Answers save as you select them, so the palette stays up to date during the session.</p>
+                <p>Leaving the tab triggers a warning so the attempt remains controlled and trackable.</p>
+              </div>
+            </Card>
           </div>
         </div>
       </div>
+
+      <Dialog
+        open={showTabWarning}
+        title="Tab switch detected"
+        description="We noticed you left the quiz tab during an active attempt."
+        onClose={() => setShowTabWarning(false)}
+        actions={
+          <Button onClick={() => setShowTabWarning(false)}>
+            Continue exam
+          </Button>
+        }
+      >
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-4 text-sm text-amber-100">
+          Violations detected: <span className="font-semibold">{tabSwitchCount}</span>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={showConfirm}
+        title="Submit with unanswered questions?"
+        description="You can go back and finish them first, or submit now and let the attempt be evaluated as-is."
+        onClose={() => setShowConfirm(false)}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setShowConfirm(false)}>
+              Go back
+            </Button>
+            <Button variant="danger" onClick={handleFinalSubmit} disabled={submitting}>
+              {submitting ? "Submitting..." : "Submit anyway"}
+            </Button>
+          </>
+        }
+      >
+        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-4 text-sm text-rose-100">
+          You still have <span className="font-semibold">{unansweredCount}</span> unanswered question(s).
+        </div>
+      </Dialog>
     </div>
   );
-};
-
-export default QuizAttempt;
+}

@@ -1,6 +1,8 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import UserShell from "./components/UserShell";
+import Card from "./components/ui/Card";
+import LoadingSkeleton from "./components/ui/LoadingSkeleton";
 
 const ProblemList = lazy(() => import("./pages/ProblemList"));
 const ProblemDetail = lazy(() => import("./pages/ProblemDetail"));
@@ -22,14 +24,27 @@ const QuizResult = lazy(() => import("./pages/quiz/QuizResult"));
 const QuizHistory = lazy(() => import("./pages/quiz/QuizHistory"));
 const QuizReview = lazy(() => import("./pages/quiz/QuizReview"));
 const Account = lazy(() => import("./pages/Account"));
-const Settings = lazy(() => import("./pages/Settings"));
-const Billing = lazy(() => import("./pages/Billing"));
-const Support = lazy(() => import("./pages/Support"));
 
 function RouteLoader() {
   return (
-    <div className="min-h-screen bg-slate-950 px-6 py-8 text-slate-300">
-      Loading page...
+    <div className="app-shell flex items-center justify-center">
+      <Card className="w-full max-w-3xl">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <p className="eyebrow">Loading</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+              Preparing your workspace
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">
+              Pulling in the next screen, navigation context, and the data you need so the page feels ready when it opens.
+            </p>
+            <LoadingSkeleton lines={4} className="mt-6" />
+          </div>
+          <Card variant="soft" className="min-h-[240px]">
+            <LoadingSkeleton lines={6} />
+          </Card>
+        </div>
+      </Card>
     </div>
   );
 }
@@ -39,15 +54,15 @@ function App() {
     <BrowserRouter>
       <Suspense fallback={<RouteLoader />}>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/landing" element={<LandingPage />} />
 
           <Route element={<UserShell />}>
             <Route path="/home" element={<Home />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/study-plans" element={<StudyPlans />} />
             <Route path="/study-plans/:id" element={<StudyPlanDetail />} />
             <Route path="/my-progress" element={<MyProgress />} />
@@ -60,9 +75,9 @@ function App() {
             <Route path="/quiz/result" element={<QuizResult />} />
             <Route path="/quiz/review/:attemptId" element={<QuizReview />} />
             <Route path="/account" element={<Account />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/billing" element={<Billing />} />
-            <Route path="/support" element={<Support />} />
+            <Route path="/settings" element={<Navigate to="/account" replace />} />
+            <Route path="/billing" element={<Navigate to="/account" replace />} />
+            <Route path="/support" element={<Navigate to="/account" replace />} />
           </Route>
 
           <Route path="/problems/:id" element={<ProblemDetail />} />

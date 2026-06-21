@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { loginApi } from "../services/authService";
 import AuthLayout from "../components/AuthLayout";
 import AuthInput from "../components/AuthInput";
+import Button from "../components/ui/Button";
 import { getRoleFromToken } from "../utils/jwtUtils";
 import { trackProductEvent } from "../utils/eventTracker";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [form, setForm] = useState({
@@ -15,8 +16,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (event) => {
+    event.preventDefault();
     setError("");
     setLoading(true);
 
@@ -41,7 +42,7 @@ export default function Login() {
             source: "WEB",
             track: "BOTH",
           },
-          { dedupeKey: `login-${form.username}` }
+          { dedupeKey: `login-${form.username}` },
         );
         navigate("/home");
       } else {
@@ -56,8 +57,25 @@ export default function Login() {
 
   return (
     <AuthLayout
-      title="Welcome back"
-      subtitle="Sign in to continue your coding and quiz practice."
+      title="Sign in to RankX"
+      subtitle="Enter your credentials to access your workspace."
+      topPrompt="Don't have an account?"
+      topActionLabel="Sign up"
+      topActionTo="/register"
+      sideTag="Trusted by 50,000+ learners"
+      sideTitle="Welcome back to your journey."
+      sideDescription="Pick up right where you left off - problems to solve, quizzes to ace, and plans to complete."
+      sideStats={[
+        { value: "1,200+", label: "Problems" },
+        { value: "300+", label: "Quizzes" },
+        { value: "98%", label: "Accuracy" },
+      ]}
+      sideQuote={{
+        initials: "PM",
+        name: "Priya Mehta",
+        role: "Software Engineer @ Google",
+        quote: "RankX helped me land my dream job at Google. The structured study plans are unlike anything else out there.",
+      }}
     >
       <form onSubmit={handleLogin} className="space-y-5">
         <AuthInput
@@ -65,7 +83,9 @@ export default function Login() {
           type="text"
           placeholder="Enter your username"
           value={form.username}
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
+          onChange={(event) => setForm({ ...form, username: event.target.value })}
+          autoComplete="username"
+          icon="user"
         />
 
         <AuthInput
@@ -73,28 +93,36 @@ export default function Login() {
           type="password"
           placeholder="Enter your password"
           value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          onChange={(event) => setForm({ ...form, password: event.target.value })}
+          autoComplete="current-password"
+          icon="lock"
         />
 
         {error ? (
           <div
             role="alert"
-            className="rounded-2xl border border-rose-500/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"
+            className="rounded-2xl border border-rose-500/18 bg-rose-500/10 px-4 py-3 text-sm text-rose-200"
           >
             {error}
           </div>
         ) : null}
 
-        <button type="submit" disabled={loading} className="btn-primary w-full">
-          {loading ? "Logging in..." : "Login"}
-        </button>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="mt-2 w-full rounded-2xl bg-[#6f63ff] py-4 text-base font-semibold shadow-[0_20px_40px_rgba(111,99,255,0.28)] hover:bg-[#7b70ff]"
+        >
+          {loading ? "Logging in..." : "Sign in"}
+        </Button>
 
-        <p className="text-center text-sm text-slate-400">
-          Don&apos;t have an account?{" "}
-          <Link to="/register" className="font-medium text-teal-300 hover:text-teal-200">
-            Sign up
-          </Link>
-        </p>
+        <div className="space-y-3 pt-2 text-center">
+          <p className="text-xs leading-6 text-[#6f7a90]">
+            By signing in you agree to our Terms and Privacy Policy.
+          </p>
+          <p className="text-xs leading-6 text-[#566276]">
+            Your dashboard, progress history, and onboarding preferences stay synced across every session.
+          </p>
+        </div>
       </form>
     </AuthLayout>
   );

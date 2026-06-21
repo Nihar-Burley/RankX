@@ -16,7 +16,7 @@ public class ProblemCategory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "category_key", nullable = false, unique = true)
     private String key;   // algorithms, databases, shell
 
     @Column(nullable = false)

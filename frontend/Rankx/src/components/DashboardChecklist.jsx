@@ -1,3 +1,5 @@
+import Card from "./ui/Card";
+
 export default function DashboardChecklist({ items = [], overrides = {} }) {
   const resolvedItems = items.map((item) => ({
     ...item,
@@ -7,8 +9,8 @@ export default function DashboardChecklist({ items = [], overrides = {} }) {
   }));
 
   return (
-    <section className="surface-card">
-      <div className="flex items-center justify-between">
+    <Card>
+      <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-sm uppercase tracking-[0.24em] text-teal-300/80">
             Activation Checklist
@@ -38,7 +40,7 @@ export default function DashboardChecklist({ items = [], overrides = {} }) {
                     : "bg-slate-800 text-slate-400"
                 }`}
               >
-                {item.completed ? "✓" : "•"}
+                {item.completed ? "OK" : "•"}
               </div>
               <div>
                 <p className="font-medium text-white">{item.title}</p>
@@ -48,6 +50,6 @@ export default function DashboardChecklist({ items = [], overrides = {} }) {
           </div>
         ))}
       </div>
-    </section>
+    </Card>
   );
 }

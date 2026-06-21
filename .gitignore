@@ -22,3 +22,7 @@ Thumbs.db
 node_modules
 dist
 .env
+
+# Local SQL dumps
+sql-dumps/import/*
+!sql-dumps/import/.gitkeep
