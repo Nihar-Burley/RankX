@@ -23,9 +23,6 @@ import java.util.stream.Collectors;
 public class SubmissionService {
 
     private static final int STATUS_ACCEPTED = 3;
-    private static final int STATUS_TIME_LIMIT_EXCEEDED = 5;
-    private static final int STATUS_COMPILATION_ERROR = 6;
-    private static final List<Integer> RUNTIME_ERROR_STATUS_IDS = List.of(7, 8, 9, 10, 11, 12, 13, 14);
 
     private final SubmissionRepository repository;
     private final ProblemServiceClient problemClient;
@@ -51,13 +48,14 @@ public class SubmissionService {
     public RunResponse run(RunRequest request, String customInput) {
 
         validateSourceCode(request.getSourceCode());
-        int languageId = resolveAndValidateLanguage(request.getProblemId(), request.getLanguageKey());
-        boolean hasCustomInput = customInput != null && !customInput.isBlank();
+
+        int languageId =
+                languageRegistry.getLanguageId(request.getLanguageKey());
 
         RunResponse response = new RunResponse();
 
         List<SampleTestCaseDTO> testCases;
-        if (hasCustomInput) {
+        if (customInput != null && !customInput.isBlank()) {
             testCases = List.of(new SampleTestCaseDTO(customInput, ""));
         } else {
             testCases = problemClient.getSampleTestCases(request.getProblemId());
@@ -72,13 +70,17 @@ public class SubmissionService {
 
             Judge0Result result = parseJudge0Result(raw);
             String actual = extractOutput(result);
-            SubmissionStatus verdict = evaluateRunVerdict(result, tc.expectedOutput(), actual, hasCustomInput);
+
+            boolean passed =
+                    result.status() != null &&
+                            ((Integer) result.status().get("id")) == STATUS_ACCEPTED &&
+                            (customInput == null || customInput.isBlank() || tc.expectedOutput().trim().equals(actual.trim()));
 
             response.addResult(
                     tc.input(),
                     tc.expectedOutput(),
                     actual,
-                    verdict == SubmissionStatus.ACCEPTED
+                    passed
             );
         }
 
@@ -89,7 +91,9 @@ public class SubmissionService {
     public SubmitResponse submit(SubmitRequest request, UUID userId) {
 
         validateSourceCode(request.getSourceCode());
-        int languageId = resolveAndValidateLanguage(request.getProblemId(), request.getLanguageKey());
+
+        int languageId =
+                languageRegistry.getLanguageId(request.getLanguageKey());
 
         Submission submission = repository.save(
                 Submission.builder()
@@ -106,7 +110,7 @@ public class SubmissionService {
 
         List<TestCaseResultDTO> results = new ArrayList<>();
 
-        SubmissionStatus finalVerdict = SubmissionStatus.ACCEPTED;
+        boolean allPassed = true;
         Long maxRuntime = null;
         Integer maxMemory = null;
 
@@ -119,10 +123,17 @@ public class SubmissionService {
 
             Judge0Result result = parseJudge0Result(raw);
             String actual = extractOutput(result);
-            SubmissionStatus caseVerdict = evaluateSubmissionVerdict(result, tc.expectedOutput(), actual);
-            boolean passed = caseVerdict == SubmissionStatus.ACCEPTED;
+
+            boolean passed =
+                    result.status() != null &&
+                            ((Integer) result.status().get("id")) == STATUS_ACCEPTED &&
+                            tc.expectedOutput().trim().equals(actual.trim());
 
             results.add(new TestCaseResultDTO(i + 1, passed));
+
+            if (!passed) {
+                allPassed = false;
+            }
 
             // optional: track max runtime/memory
             Long timeMs = parseTime(result.time());
@@ -135,27 +146,22 @@ public class SubmissionService {
                         ? result.memory()
                         : Math.max(maxMemory, result.memory());
             }
-
-            if (!passed) {
-                finalVerdict = caseVerdict;
-                if (isTerminalJudgeFailure(caseVerdict)) {
-                    break;
-                }
-            }
         }
 
-        submission.setStatus(finalVerdict);
+        submission.setStatus(
+                allPassed ? SubmissionStatus.ACCEPTED : SubmissionStatus.WRONG_ANSWER
+        );
         submission.setRuntimeMs(maxRuntime == null ? null : maxRuntime.intValue());
         submission.setMemoryKb(maxMemory);
         repository.save(submission);
 
-        if (finalVerdict == SubmissionStatus.ACCEPTED) {
+        if (allPassed) {
             notifyProgressUpdate(userId, request.getProblemId(), submission.getId());
         }
 
         return SubmitResponse.builder()
                 .submissionId(submission.getId())
-                .verdict(finalVerdict.name())
+                .verdict(allPassed ? "ACCEPTED" : "WRONG_ANSWER")
                 .results(results)
                 .runtimeMs(maxRuntime)
                 .memoryKb(maxMemory)
@@ -265,25 +271,6 @@ public class SubmissionService {
         }
     }
 
-    private int resolveAndValidateLanguage(Long problemId, String languageKey) {
-        int languageId = languageRegistry.getLanguageId(languageKey);
-        validateProblemLanguage(problemId, languageKey);
-        return languageId;
-    }
-
-    private void validateProblemLanguage(Long problemId, String languageKey) {
-        ProblemDetailDTO problem = problemClient.getProblemDetails(problemId);
-        boolean supported = problem.languages() != null
-                && problem.languages().stream()
-                .map(ProblemLanguageDTO::languageKey)
-                .filter(Objects::nonNull)
-                .anyMatch(key -> key.equalsIgnoreCase(languageKey));
-
-        if (!supported) {
-            throw new IllegalArgumentException("Language '" + languageKey + "' is not enabled for problem " + problemId);
-        }
-    }
-
     private Judge0Result parseJudge0Result(Map<String, Object> raw) {
         return new Judge0Result(
                 (String) raw.get("stdout"),
@@ -311,77 +298,6 @@ public class SubmissionService {
     private Long parseTime(String time) {
         if (time == null) return null;
         return (long) (Double.parseDouble(time) * 1000);
-    }
-
-    private SubmissionStatus evaluateRunVerdict(
-            Judge0Result result,
-            String expectedOutput,
-            String actualOutput,
-            boolean hasCustomInput
-    ) {
-        Integer statusId = getStatusId(result);
-        if (statusId == null) {
-            return SubmissionStatus.RUNTIME_ERROR;
-        }
-        if (statusId != STATUS_ACCEPTED) {
-            return mapFailureStatus(statusId);
-        }
-        if (hasCustomInput) {
-            return SubmissionStatus.ACCEPTED;
-        }
-        return outputsMatch(expectedOutput, actualOutput)
-                ? SubmissionStatus.ACCEPTED
-                : SubmissionStatus.WRONG_ANSWER;
-    }
-
-    private SubmissionStatus evaluateSubmissionVerdict(
-            Judge0Result result,
-            String expectedOutput,
-            String actualOutput
-    ) {
-        Integer statusId = getStatusId(result);
-        if (statusId == null) {
-            return SubmissionStatus.RUNTIME_ERROR;
-        }
-        if (statusId != STATUS_ACCEPTED) {
-            return mapFailureStatus(statusId);
-        }
-        return outputsMatch(expectedOutput, actualOutput)
-                ? SubmissionStatus.ACCEPTED
-                : SubmissionStatus.WRONG_ANSWER;
-    }
-
-    private Integer getStatusId(Judge0Result result) {
-        if (result.status() == null) {
-            return null;
-        }
-        Object statusId = result.status().get("id");
-        return statusId instanceof Integer ? (Integer) statusId : null;
-    }
-
-    private SubmissionStatus mapFailureStatus(int statusId) {
-        if (statusId == STATUS_TIME_LIMIT_EXCEEDED) {
-            return SubmissionStatus.TIME_LIMIT_EXCEEDED;
-        }
-        if (statusId == STATUS_COMPILATION_ERROR) {
-            return SubmissionStatus.COMPILATION_ERROR;
-        }
-        if (RUNTIME_ERROR_STATUS_IDS.contains(statusId)) {
-            return SubmissionStatus.RUNTIME_ERROR;
-        }
-        return SubmissionStatus.WRONG_ANSWER;
-    }
-
-    private boolean isTerminalJudgeFailure(SubmissionStatus status) {
-        return status == SubmissionStatus.COMPILATION_ERROR
-                || status == SubmissionStatus.RUNTIME_ERROR
-                || status == SubmissionStatus.TIME_LIMIT_EXCEEDED;
-    }
-
-    private boolean outputsMatch(String expectedOutput, String actualOutput) {
-        String expected = expectedOutput == null ? "" : expectedOutput.trim();
-        String actual = actualOutput == null ? "" : actualOutput.trim();
-        return expected.equals(actual);
     }
 
     private void notifyProgressUpdate(UUID userId, Long problemId, Long submissionId) {

@@ -14,7 +14,7 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    @Value("${security.jwt.secret}")
+    @Value("${security.jwt.secret:n7m4FJw9K9JH6v0K+K4F4A7Q9KJZ9JH1L4v9F2Q1G8E=}")
     private String secret;
 
     private Key getKey() {
@@ -22,11 +22,16 @@ public class JwtService {
     }
 
     public String generateToken(AuthUsers user) {
+
         return Jwts.builder()
-                .setSubject(user.getId().toString())
+                // 🔥 PRODUCTION FIX
+                .setSubject(user.getId().toString())   // UUID, NOT username
+
                 .claim("role", user.getRole())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000))
+                .setExpiration(
+                        new Date(System.currentTimeMillis() + 86400000)
+                )
                 .signWith(getKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

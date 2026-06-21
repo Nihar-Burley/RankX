@@ -7,7 +7,7 @@ import lombok.*;
 @Table(
         name = "problem_subcategories",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"category_id", "subcategory_key"})
+                @UniqueConstraint(columnNames = {"category_id", "key"})
         }
 )
 @Getter @Setter
@@ -22,7 +22,7 @@ public class ProblemSubCategory {
     @JoinColumn(name = "category_id", nullable = false)
     private ProblemCategory category;
 
-    @Column(name = "subcategory_key", nullable = false)
+    @Column(nullable = false)
     private String key;   // arrays, dp, graphs
 
     @Column(nullable = false)

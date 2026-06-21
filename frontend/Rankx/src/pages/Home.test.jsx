@@ -107,10 +107,10 @@ describe("Home", () => {
     render(<Home />);
 
     expect(await screen.findByText(/Welcome back, Nihar/i)).toBeInTheDocument();
-    expect(screen.getByText("Everything moving in your learning workspace")).toBeInTheDocument();
+    expect(screen.getByText("Current progress")).toBeInTheDocument();
     expect(screen.getAllByText("DSA Basics").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Continue DSA Basics").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Recommended next move/i)).toBeInTheDocument();
+    expect(screen.getByText("Continue DSA Basics")).toBeInTheDocument();
+    expect(screen.getByText(/Recommended Next Move/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /continue plan/i }));
     expect(navigateMock).toHaveBeenCalledWith("/my-progress");

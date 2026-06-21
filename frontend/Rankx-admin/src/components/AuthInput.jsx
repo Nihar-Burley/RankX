@@ -1,5 +1,3 @@
-import { TextField } from "./ui/FormField";
-
 export default function AuthInput({
   label,
   type,
@@ -11,13 +9,18 @@ export default function AuthInput({
   const inputId = id || label.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <TextField
-      id={inputId}
-      label={label}
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={onChange}
-    />
+    <div className="flex flex-col gap-2">
+      <label htmlFor={inputId} className="field-label">
+        {label}
+      </label>
+      <input
+        id={inputId}
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        className="input-base"
+      />
+    </div>
   );
 }

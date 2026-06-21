@@ -1,15 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import EmptyState from "../../components/EmptyState";
-import ErrorState from "../../components/ErrorState";
-import LoadingState from "../../components/LoadingState";
-import PageHeader from "../../components/PageHeader";
-import SearchFilterBar from "../../components/SearchFilterBar";
-import StatCard from "../../components/StatCard";
-import Badge from "../../components/ui/Badge";
-import Button from "../../components/ui/Button";
-import DataTable from "../../components/ui/DataTable";
-import { logoutUser } from "../../services/authService";
 import { getMyResults } from "../../services/resultApi";
 
 const formatPercentage = (value) => `${Number(value || 0).toFixed(2)}%`;
@@ -45,7 +35,7 @@ export default function QuizHistory() {
         setError("");
       } catch (err) {
         if (err.response?.status === 401) {
-          logoutUser();
+          localStorage.removeItem("token");
           navigate("/login");
           return;
         }
@@ -67,114 +57,96 @@ export default function QuizHistory() {
     }));
   };
 
-  const passedCount = useMemo(
-    () => results.filter((result) => Number(result.percentage || 0) >= 40).length,
-    [results]
-  );
-
-  const averageScore = useMemo(() => {
-    if (!results.length) {
-      return "0%";
-    }
-
-    const average =
-      results.reduce((sum, result) => sum + Number(result.percentage || 0), 0) / results.length;
-    return `${average.toFixed(0)}%`;
-  }, [results]);
-
   return (
-    <div className="app-container space-y-8">
-      <PageHeader
-        eyebrow="Quiz History"
-        title="Quiz results"
-        description="Review your attempts, spot score patterns, and jump straight into detailed review when you need to understand a result."
-        actions={
-          <>
-            <Button variant="secondary" onClick={() => navigate("/quiz")}>
-              Browse quizzes
-            </Button>
-            <Button onClick={() => navigate("/home")}>Back to dashboard</Button>
-          </>
-        }
-      >
-        <div className="grid gap-4 md:grid-cols-4">
-          <StatCard label="Visible attempts" value={results.length} detail="Quiz results matching current filters" tone="cyan" />
-          <StatCard label="Passed" value={passedCount} detail="Attempts at or above the current pass threshold" tone="emerald" />
-          <StatCard label="Average score" value={averageScore} detail="Average percentage across visible attempts" tone="amber" />
-          <StatCard label="Best score" value={results.length ? formatPercentage(Math.max(...results.map((result) => Number(result.percentage || 0)))) : "0%"} detail="Highest visible percentage" tone="violet" />
+    <div className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100 md:px-10">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.25em] text-cyan-400">
+              Quiz History
+            </p>
+            <h1 className="mt-3 text-4xl font-bold">Quiz Results</h1>
+            <p className="mt-2 text-slate-400">
+              Review your quiz attempts, score trends, and jump into detailed review.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/home")}
+            className="rounded-2xl border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
+          >
+            Back to Dashboard
+          </button>
         </div>
-      </PageHeader>
 
-      <SearchFilterBar
-        searchProps={{
-          id: "quiz-history-id",
-          label: "Filter by quiz ID",
-          placeholder: "Filter by quiz ID",
-          name: "quizId",
-          value: filters.quizId,
-          onChange: handleFilterChange,
-        }}
-        extraFilters={
-          <label className="w-full sm:w-auto">
-            <span className="sr-only">Filter by minimum score percentage</span>
+        <div className="mb-6 grid gap-4 rounded-3xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-2">
+          <label className="text-sm text-slate-300">
+            <span className="mb-2 block text-slate-400">Quiz ID</span>
+            <input
+              name="quizId"
+              value={filters.quizId}
+              onChange={handleFilterChange}
+              placeholder="Quiz UUID"
+              className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100"
+            />
+          </label>
+          <label className="text-sm text-slate-300">
+            <span className="mb-2 block text-slate-400">Minimum score %</span>
             <input
               name="minimumPercentage"
               value={filters.minimumPercentage}
               onChange={handleFilterChange}
               inputMode="decimal"
-              placeholder="Minimum score %"
-              className="input-base min-w-[180px]"
-              aria-label="Filter quiz history by minimum score percentage"
+              placeholder="60"
+              className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100"
             />
           </label>
-        }
-      />
+        </div>
 
-      {loading ? (
-        <LoadingState title="Loading quiz history" description="Preparing your attempts, score patterns, and review links." />
-      ) : error ? (
-        <ErrorState
-          title="Quiz history is unavailable"
-          message={error}
-          action={
-            <Button variant="secondary" onClick={() => window.location.reload()}>
-              Try again
-            </Button>
-          }
-        />
-      ) : results.length === 0 ? (
-        <EmptyState
-          title="No quiz results yet"
-          description="Attempt one quiz to start building visible score history, review links, and progress signals."
-          action={<Button onClick={() => navigate("/quiz")}>Start a quiz</Button>}
-        />
-      ) : (
-        <DataTable
-          rowKey="attemptId"
-          rows={results}
-          onRowClick={(result) => navigate(`/quiz/review/${result.attemptId}`)}
-          columns={[
-            { key: "attemptId", header: "Attempt", render: (result) => <span className="font-medium text-white">#{result.attemptId}</span> },
-            { key: "quizId", header: "Quiz", render: (result) => `#${result.quizId}` },
-            {
-              key: "score",
-              header: "Score",
-              render: (result) => `${result.score}/${result.totalQuestions}`,
-            },
-            {
-              key: "percentage",
-              header: "Percentage",
-              render: (result) => (
-                <Badge tone={Number(result.percentage || 0) >= 40 ? "success" : "warning"}>
-                  {formatPercentage(result.percentage)}
-                </Badge>
-              ),
-            },
-          ]}
-          emptyTitle="No quiz attempts match these filters"
-          emptyDescription="Adjust the quiz ID or minimum score filters to broaden the view."
-        />
-      )}
+        {loading ? (
+          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-8 text-slate-300">
+            Loading quiz history...
+          </div>
+        ) : error ? (
+          <div className="rounded-3xl border border-amber-500/40 bg-amber-500/10 p-8 text-amber-200">
+            {error}
+          </div>
+        ) : results.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900 p-8 text-slate-400">
+            No quiz results yet. Attempt a quiz to build your history.
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900">
+            <table className="w-full">
+              <thead className="bg-slate-800 text-left text-sm text-slate-300">
+                <tr>
+                  <th className="px-6 py-4">Attempt</th>
+                  <th className="px-6 py-4">Quiz</th>
+                  <th className="px-6 py-4">Score</th>
+                  <th className="px-6 py-4">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.map((result) => (
+                  <tr
+                    key={result.attemptId}
+                    onClick={() => navigate(`/quiz/review/${result.attemptId}`)}
+                    className="cursor-pointer border-t border-slate-800 text-sm text-slate-200 transition hover:bg-slate-800/80"
+                  >
+                    <td className="px-6 py-4 font-medium">#{result.attemptId}</td>
+                    <td className="px-6 py-4">#{result.quizId}</td>
+                    <td className="px-6 py-4">
+                      {result.score}/{result.totalQuestions}
+                    </td>
+                    <td className="px-6 py-4 text-slate-300">
+                      {formatPercentage(result.percentage)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,14 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import ErrorState from "../components/ErrorState";
-import LoadingState from "../components/LoadingState";
-import Button from "../components/ui/Button";
+import { useParams } from "react-router-dom";
 import ProblemWorkspace from "../components/ProblemWorkspace";
 import api from "../services/api";
 
 export default function ProblemDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [problem, setProblem] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -45,19 +41,9 @@ export default function ProblemDetail() {
   if (error) {
     return (
       <div className="app-shell flex items-center justify-center">
-        <div className="w-full max-w-2xl">
-          <ErrorState
-            title="Problem unavailable"
-            message={error}
-            action={
-              <div className="flex flex-wrap gap-3">
-                <Button onClick={() => navigate("/problems")}>Back to practice</Button>
-                <Button variant="secondary" onClick={() => window.location.reload()}>
-                  Try again
-                </Button>
-              </div>
-            }
-          />
+        <div role="alert" className="surface-card w-full max-w-xl rounded-[28px] text-center">
+          <h1 className="text-2xl font-semibold text-white">Problem unavailable</h1>
+          <p className="mt-3 text-sm text-slate-400">{error}</p>
         </div>
       </div>
     );
@@ -66,11 +52,9 @@ export default function ProblemDetail() {
   if (loading || !problem) {
     return (
       <div className="app-shell flex items-center justify-center">
-        <div className="w-full max-w-2xl">
-          <LoadingState
-            title="Loading problem workspace"
-            description="Preparing the problem statement, coding surface, and evaluation tools."
-          />
+        <div className="surface-card w-full max-w-xl rounded-[28px] text-center">
+          <div className="mx-auto h-12 w-12 animate-pulse rounded-full bg-teal-400/15" />
+          <p className="mt-4 text-sm text-slate-300">Loading problem workspace...</p>
         </div>
       </div>
     );

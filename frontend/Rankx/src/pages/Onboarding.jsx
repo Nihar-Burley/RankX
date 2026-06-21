@@ -6,7 +6,6 @@ import OnboardingCard from "../components/OnboardingCard";
 import OnboardingShell from "../components/OnboardingShell";
 import SelectableCard from "../components/SelectableCard";
 import StepProgress from "../components/StepProgress";
-import Button from "../components/ui/Button";
 import { logoutUser } from "../services/authService";
 import { getMyPreferences, updateMyPreferences } from "../services/userApi";
 import { trackProductEvent } from "../utils/eventTracker";
@@ -326,16 +325,17 @@ export default function Onboarding() {
         progress={<StepProgress steps={STEP_TITLES} currentStep={currentStep} />}
         actions={
           <>
-            <Button type="button" variant="secondary" onClick={handleBack}>
+            <button type="button" onClick={handleBack} className="btn-secondary">
               {currentStep === 0 ? "Skip for now" : "Back"}
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
               onClick={handleNext}
               disabled={!canContinue || submitting}
+              className="btn-primary"
             >
               {submitting ? "Saving..." : currentStep === STEP_TITLES.length - 1 ? "Start learning" : "Continue"}
-            </Button>
+            </button>
           </>
         }
       >
