@@ -44,7 +44,14 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
     <dependencies>
+
+        <dependency>
+            <groupId>com.rankx</groupId>
+            <artifactId>common-lib</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
 
         <!-- Web (REQUIRED for Config Server) -->
         <dependency>

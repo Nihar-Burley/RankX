@@ -45,7 +45,7 @@ export default function ProblemWorkspace({ problem }) {
   const [editorLanguage, setEditorLanguage] = useState(initialWorkspace.defaultLanguage.editorMode);
   const [code, setCode] = useState(initialWorkspace.defaultCode);
   const [output, setOutput] = useState("");
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(true);a
   const [showConsole, setShowConsole] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [testTab, setTestTab] = useState("testcase");

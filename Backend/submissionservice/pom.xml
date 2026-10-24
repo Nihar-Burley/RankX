@@ -34,6 +34,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.rankx</groupId>
+            <artifactId>common-lib</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
 
         <!-- Web (REST APIs) -->
         <dependency>
